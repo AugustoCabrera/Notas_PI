@@ -380,3 +380,152 @@ En esta iteración, también se estudió con mayor profundidad el funcionamiento
 1. El hilo en ejecución es expulsado, retornando la CPU y cambiando su estado de `RUNNING ⇒ CAN RUN/INHIBITED`.
 2. El hilo saliente es agregado a una cola de ejecución en caso de que sea un cambio de contexto involuntario, cambiando de estado de `CAN RUN ⇒ RUNQ`.
 3. Se elige el siguiente hilo a ejecutar y se lo manda a ejecución, asignándole la CPU y cambiando su estado de `RUNQ ⇒ RUNNING`.
+
+
+---
+
+###   Décima iteración: Monoprocesador/ Multiprocesador 📋
+
+Se procederá a adaptar el modelo de tal forma que pueda representar tanto el comportamiento **monoprocesador (NO SMP)** como el comportamiento **multiprocesador (SMP)** del sistema operativo. Esto permitirá simular ambos escenarios y reflejar el manejo de hilos y CPUs en entornos con una sola CPU o múltiples CPUs, asegurando que el scheduler opere correctamente en ambas configuraciones.
+
+
+<p align="center">
+  <a href="https://example.com/">
+    <img src="img/image22.png" alt="bloques">
+  </a>
+  </p>
+
+- Utilizar una **plaza global** para indicar que el sistema se encuentra en modo **monoprocesador (NO SMP)**.
+- Utilizar una **plaza global** para indicar que el sistema se encuentra en modo **multiprocesador (SMP)**.
+- Emplear una **transición global** entre ambas plazas, la cual se disparará cuando se inicialicen todas las CPU.
+- Agregar una **transición de ejecución global** que será utilizada únicamente por la CPU0 cuando el sistema se encuentre en modo monoprocesador y no castigará al resto de las CPU. Notar que esta transición no estará conectada al resto de las CPU del sistema operativo.
+- La **transición global de ejecución** es equivalente a la ya existente para cada CPU y tendrá como jerárquica la misma transición `RUNQ ⇒ RUNNING` del hilo.
+
+#### Implementación
+
+
+1. Añadir en `petri_global_net.c` la transición jerárquica del thread a la transición de ejecución global.
+
+
+
+2. Agregar en `petri_global_net.c` el campo `smp_set`, inicializado en 0, el cual va a permitir identificar el momento en que se inició el modo SMP.
+
+<p align="center">
+  <a href="https://example.com/">
+    <img src="img/image23.png" alt="bloques">
+  </a>
+  </p>
+
+
+3. Añadir en la función `resource_fire_net` en `petri_global_net.c` la comprobación del estado SMP del sistema representado por `smp_started`. Cuando `smp_started` se ponga en 1, se debe disparar la transición de traspaso a SMP en la red de recursos y poner en 1 a `smp_set`.
+
+<p align="center">
+  <a href="https://example.com/">
+    <img src="img/image24.png" alt="bloques">
+  </a>
+  </p>
+
+
+4. Agregar en `sched_petri.h` la definición de `resource_execute_thread` e implementarla en `petri_global_net.c`:
+   - `Resource_execute_thread`: recibe un thread como parámetro y un número de CPU. Esta función ejecuta la transición de ejecución que corresponda, según el valor de `smp_set`.
+
+<p align="center">
+  <a href="https://example.com/">
+    <img src="img/image25.png" alt="bloques">
+  </a>
+  </p>
+<p align="center">
+  <a href="https://example.com/">
+    <img src="img/image26.png" alt="bloques">
+  </a>
+  </p>
+
+
+
+5. Reemplazar en la función `sched_switch` en `sched_4bsd.c` el disparo de la transición de ejecución por un llamado a `resource_execute_thread`.
+6. Modificar la función `resource_choose_cpu` en `petri_global_net.c` para que retorne siempre la transición de encolado global cuando el sistema se encuentre en **NO SMP**.
+
+
+
+---
+
+###   Undécima iteración: Expulsión de hilos 📋
+
+Representar la expulsión de un hilo de una determinada cola.   También se buscará representar la expulsión de los hilos del sistema operativo cuando los mismos finalizan su ejecución.
+
+
+<p align="center">
+  <a href="https://example.com/">
+    <img src="img/image27.png" alt="bloques">
+  </a>
+  </p>
+
+<p align="center">
+  <a href="https://example.com/">
+    <img src="img/image28.png" alt="bloques">
+  </a>
+  </p>
+
+  En el modelo del hilo se representa un nuevo cambio de estado para el hilo `RUNQ ⇒ CAN RUN`. La transición `T6` se ejecutará cada vez que un hilo deba ser expulsado de la cola en que se encuentra actualmente.
+
+En cuanto al modelo de la red de recursos, para representar la expulsión de los hilos se van a incorporar dos transiciones de expulsión para cada CPU:
+- La primera expulsará a un hilo de su cola cada vez que se ejecute y restará un token de habilitación de la CPU, es decir, que se premia a la CPU para tener como jerárquica la transición `RUNQ ⇒ CAN RUN` del hilo.
+
+Este último modelo contempla las siguientes funcionalidades del scheduler:
+- Encolado de hilos, ya sea en cola global o de una CPU.
+- Expulsión de hilos de una cola, para asignarlos a una correcta.
+- Desencolado de hilos cuando se encuentra presente la CPU, ya sea desde la cola global o la de la CPU.
+- Ejecución monoprocesador para la `CPU0`.
+- Ejecución multiprocesador para todas las CPU.
+- Retornos voluntarios e involuntarios de la CPU.
+- Transiciones jerárquicas asignadas para la conexión con cada red de hilos que pueda encolar.
+
+La segunda expulsará a un hilo de su cola cada vez que se ejecute y la plaza de habilitación no tenga ningún token.
+
+Por otra parte, se agregó también una transición global de expulsión para cuando el hilo expulsado se encuentre encolado en la cola global, la cual es única ya que no debe premiar el encolado de ninguna CPU.
+
+Para realizar la nueva conexión entre ambas redes, se va a tener que tanto las transiciones de expulsión de cada CPU como la transición de expulsión global...
+
+
+#### Implementación del modelo
+
+
+1. Definir en `sched_petri.h` los macros de las nuevas plazas y transiciones incorporadas al modelo. Inicializarlas en `init_resource_net`.
+
+2. Añadir en `petri_global_net.c` la transición jerárquica del thread a las transiciones de remoción de cada CPU y la global.
+
+3. Agregar en `sched_petri.h` la definición de `resource_remove_thread` e implementarla en `petri_global_net.c`:
+
+   - **Resource_remove_thread**: recibe un thread como parámetro y un número de CPU. Esta función ejecuta la transición de expulsión de la CPU que corresponda, según cuál sea la que se encuentre sensibilizada.
+
+4. Identificar dónde se expulsan los threads de su cola en el código fuente. Esto se realiza en `sched_4bsd.c` en la función `sched_rem`.
+
+5. Llamar a `resource_fire_net` en `sched_rem` para expulsar a los threads que se encuentren actualmente en la cola global y deban ser reubicados, o bien llamar a `resource_remove_thread` para expulsar a los threads que se encuentren en una cola de CPU para reubicarlos.
+
+6. Identificar dónde son desechados los threads que finalizan su ejecución en el código fuente. Esto se realiza en `sched_4bsd.c` en la función `sched_throw`.
+
+
+
+7. Llamar a `resource_expulse_thread` en `sched_throw` para expulsar a los threads que deben ser desechados. Posteriormente, se debe seleccionar un nuevo thread de la cola y mandarlo a ejecución. Para ello, debe dispararse primero la transición de desencolado, al igual que se hace en `sched_choose`, y posteriormente llamar a `resource_execute_thread` con el thread elegido.
+
+<p align="center">
+  <a href="https://example.com/">
+    <img src="img/image30.png" alt="bloques">
+  </a>
+  </p>
+
+  #### Análisis de resultados
+
+Luego de probar este último modelo en el código y simularlo, el mismo resultó funcionar como se esperaba tanto para la red de los recursos como para la del thread, cumpliendo el objetivo propuesto para la iteración. Sin embargo, se llevó a cabo un análisis más profundo y se pudieron resaltar algunas falencias en la red de recursos:
+
+1. **Ineficiencia en la penalización de CPUs**: El método propuesto de castigar las CPU que ejecutan más lento resulta poco eficiente cuando hay pocos hilos ejecutándose en el sistema, ya que las colas están en su mayor tiempo vacías y no resulta necesario castigar a CPU inactivas.
+
+2. **Pérdida de control del estado global**: Cuando un hilo pasa a ejecución, se pierde control del estado en que se encuentra la red global. Además, para las transiciones de retorno de CPU no existe ningún mecanismo de control presente en la red global para controlar sus disparos.
+
+Por otra parte, el modelo aún no cubre la funcionalidad del scheduler que permite a hilos que acaban de ser encolados pasar directamente a ejecución cuando su prioridad es mayor al que se encuentra actualmente ejecutando.
+
+---
+
+
+### Décimo tercera iteración: Hilos de baja prioridad 📋
+
