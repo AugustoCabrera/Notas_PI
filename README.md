@@ -2,7 +2,7 @@
 
 
 
-## 01-PI-Papp-Turina   🚀
+# 01-PI-Papp-Turina   🚀
 
 El modelo propuesto para el desarrollo del trabajo es el **modelo iterativo**. En cada iteración se presentará:
 
@@ -23,7 +23,6 @@ _En base a los 5 estados que se puede encontrar un hilo se obtiene:_
 
 
 <p align="center">
-  <a href="https://example.com/">
     <img src="img/image1.png" alt="bloques">
   </a>
   </p>
@@ -47,7 +46,6 @@ _En base a los 5 estados que se puede encontrar un hilo se obtiene:_
 _NOTA: Algunos valores presentan incongruencias, ya que corresponden a la versión final de la RDP. Por motivos de continuidad, se muestra que se han modificado, pero no se debe dar importancia al valor final. En la última versión se aclarará este punto._
 
 <p align="center">
-  <a href="https://example.com/">
     <img src="img/image2.png" alt="bloques">
   </a>
   </p>
@@ -59,7 +57,6 @@ _NOTA: Algunos valores presentan incongruencias, ya que corresponden a la versi�
 
 
 <p align="center">
-  <a href="https://example.com/">
     <img src="img/image3.png" alt="bloques">
   </a>
   </p>
@@ -72,7 +69,6 @@ de marcado inicial (PLACES SIZE), y a su vez se implementaron las
 funciones declaradas anteriormente:
 
 <p align="center">
-  <a href="https://example.com/">
     <img src="img/image4.png" alt="bloques">
   </a>
   </p>
@@ -84,7 +80,6 @@ funciones declaradas anteriormente:
 `\sys\kern\kern_thread.c`  → Llamamos ahora a `init_petri_net` para inicializar y asignar memoria
 
 <p align="center">
-  <a href="https://example.com/">
     <img src="img/image5.png" alt="bloques">
   </a>
   </p>
@@ -102,7 +97,6 @@ proponer un modelo inicial para representar los estados y eventos de los recurso
 En esta iteración se buscara proponer un modelo inicial de red de Petri para representar el reparto de las CPU para cada uno de los hilos.
 
 <p align="center">
-  <a href="https://example.com/">
     <img src="img/image6.png" alt="bloques">
   </a>
   </p>
@@ -121,7 +115,6 @@ misma. Esto permite que la asignación de hilos dentro de cada CPU sea justa
 y equitativa.
 
 <p align="center">
-  <a href="https://example.com/">
     <img src="img/image7.png" alt="bloques">
   </a>
   </p>
@@ -132,7 +125,6 @@ y equitativa.
 `\sys\sys\sched_petri.h` se describen ahi 
 
 <p align="center">
-  <a href="https://example.com/">
     <img src="img/image8.png" alt="bloques">
   </a>
   </p>
@@ -145,7 +137,6 @@ Se declaro la matriz de incidencia base y la matriz de inhibición base, y a
 su vez se implementaron las funciones declaradas anteriormente
 
 <p align="center">
-  <a href="https://example.com/">
     <img src="img/image9.png" alt="bloques">
   </a>
   </p>
@@ -158,7 +149,6 @@ se inicializa el scheduler para inicializar su red de recursos. Llamar a init_re
 espacio de memoria para la red de recursos.
 
 <p align="center">
-  <a href="https://example.com/">
     <img src="img/image10.png" alt="bloques">
   </a>
   </p>
@@ -175,7 +165,6 @@ CPU que conforman el sistema.
 
 
 <p align="center">
-  <a href="https://example.com/">
     <img src="img/image11.png" alt="bloques">
   </a>
   </p>
@@ -193,7 +182,6 @@ Para implementar el modelo en el código fuente, se procedió a:
 Esto se realiza en `sched_4bsd.c` en la función `sched_add`.
 
 <p align="center">
-  <a href="https://example.com/">
     <img src="img/image12.png" alt="bloques">
   </a>
   </p>
@@ -201,7 +189,6 @@ Esto se realiza en `sched_4bsd.c` en la función `sched_add`.
  Llamar a `resource_fire_net` en `sched_add` para contemplar en la red el encolado de los threads que ingresan al scheduler en la CPU que le corresponda.
 
 <p align="center">
-  <a href="https://example.com/">
     <img src="img/image13.png" alt="bloques">
   </a>
   </p>
@@ -216,7 +203,6 @@ si la CPU actual esta en condiciones de encolar.
 
 
 <p align="center">
-  <a href="https://example.com/">
     <img src="img/image14.png" alt="bloques">
   </a>
   </p>
@@ -227,7 +213,6 @@ si la CPU actual esta en condiciones de encolar.
 Definir como automática la transición de descarte al momento de inicializar el vector de transiciones automáticas en `sched_petri.h`. De esta forma, cada vez que la misma quede sensibilizada, será disparada de inmediato, manteniendo siempre así en el modelo al menos una CPU que pueda encolar.
 
 <p align="center">
-  <a href="https://example.com/">
     <img src="img/image15.png" alt="bloques">
   </a>
   </p>
@@ -236,10 +221,9 @@ Definir como automática la transición de descarte al momento de inicializar el
   ### Sexta iteración: Selección y Ejecución del Hilo. 📋
 
   Modelo para el encolado y desencolado de hilos. Las transiciones en naranja van a representar al resto de las
-CPU y se las incorporan al modelo para mostrar la penalizaci´on detallada
+CPU y se las incorporan al modelo para mostrar la penalización detallada
 
 <p align="center">
-  <a href="https://example.com/">
     <img src="img/image16.png" alt="bloques">
   </a>
   </p>
@@ -251,7 +235,6 @@ CPU y se las incorporan al modelo para mostrar la penalizaci´on detallada
    - `Hierarchical_corresponse`: vector con las transiciones jerárquicas de la red del thread, ordenadas de acuerdo al índice correspondiente con `hierarchical_transitions`.
 
 <p align="center">
-  <a href="https://example.com/">
     <img src="img/image17.png" alt="bloques">
   </a>
   </p>
@@ -286,7 +269,6 @@ El sistema de turnos propuesto
 desde un principio resulta innecesario e ineficiente
 
 <p align="center">
-  <a href="https://example.com/">
     <img src="img/image18.png" alt="bloques">
   </a>
   </p>
@@ -305,7 +287,6 @@ desde un principio resulta innecesario e ineficiente
 
 
 <p align="center">
-  <a href="https://example.com/">
     <img src="img/image19.png" alt="bloques">
   </a>
   </p>
@@ -336,7 +317,6 @@ Supuesto de que los hilos pueden tener cierta afinidad con alguna CPU o grupo de
 
 
 <p align="center">
-  <a href="https://example.com/">
     <img src="img/image20.png" alt="bloques">
   </a>
   </p>
@@ -363,7 +343,6 @@ Continuando el análisis, también se presentó otra cuestión. A la hora de sel
 ###  Novena iteración: Selección entre colas 📋
 
 <p align="center">
-  <a href="https://example.com/">
     <img src="img/image21.png" alt="bloques">
   </a>
   </p>
@@ -390,7 +369,6 @@ Se procederá a adaptar el modelo de tal forma que pueda representar tanto el co
 
 
 <p align="center">
-  <a href="https://example.com/">
     <img src="img/image22.png" alt="bloques">
   </a>
   </p>
@@ -411,7 +389,6 @@ Se procederá a adaptar el modelo de tal forma que pueda representar tanto el co
 2. Agregar en `petri_global_net.c` el campo `smp_set`, inicializado en 0, el cual va a permitir identificar el momento en que se inició el modo SMP.
 
 <p align="center">
-  <a href="https://example.com/">
     <img src="img/image23.png" alt="bloques">
   </a>
   </p>
@@ -420,7 +397,6 @@ Se procederá a adaptar el modelo de tal forma que pueda representar tanto el co
 3. Añadir en la función `resource_fire_net` en `petri_global_net.c` la comprobación del estado SMP del sistema representado por `smp_started`. Cuando `smp_started` se ponga en 1, se debe disparar la transición de traspaso a SMP en la red de recursos y poner en 1 a `smp_set`.
 
 <p align="center">
-  <a href="https://example.com/">
     <img src="img/image24.png" alt="bloques">
   </a>
   </p>
@@ -430,12 +406,10 @@ Se procederá a adaptar el modelo de tal forma que pueda representar tanto el co
    - `Resource_execute_thread`: recibe un thread como parámetro y un número de CPU. Esta función ejecuta la transición de ejecución que corresponda, según el valor de `smp_set`.
 
 <p align="center">
-  <a href="https://example.com/">
     <img src="img/image25.png" alt="bloques">
   </a>
   </p>
 <p align="center">
-  <a href="https://example.com/">
     <img src="img/image26.png" alt="bloques">
   </a>
   </p>
@@ -455,13 +429,11 @@ Representar la expulsión de un hilo de una determinada cola.   También se busc
 
 
 <p align="center">
-  <a href="https://example.com/">
     <img src="img/image27.png" alt="bloques">
   </a>
   </p>
 
 <p align="center">
-  <a href="https://example.com/">
     <img src="img/image28.png" alt="bloques">
   </a>
   </p>
@@ -509,7 +481,6 @@ Para realizar la nueva conexión entre ambas redes, se va a tener que tanto las 
 7. Llamar a `resource_expulse_thread` en `sched_throw` para expulsar a los threads que deben ser desechados. Posteriormente, se debe seleccionar un nuevo thread de la cola y mandarlo a ejecución. Para ello, debe dispararse primero la transición de desencolado, al igual que se hace en `sched_choose`, y posteriormente llamar a `resource_execute_thread` con el thread elegido.
 
 <p align="center">
-  <a href="https://example.com/">
     <img src="img/image30.png" alt="bloques">
   </a>
   </p>
@@ -529,3 +500,139 @@ Por otra parte, el modelo aún no cubre la funcionalidad del scheduler que permi
 
 ### Décimo tercera iteración: Hilos de baja prioridad 📋
 
+Se buscará implementar el funcionamiento de los hilos de baja prioridad que pasan a ocupar la CPU cuando la misma no posee ningún hilo para ejecutar en su cola.
+
+
+<p align="center">
+    <img src="img/image31.png" alt="bloques">
+  </a>
+  </p>
+
+  Habiendo llegado a este último modelo, se detalla el marcado inicial necesario para asegurar el correcto funcionamiento del *scheduler*, tanto en la red de hilos como en la red de recursos:
+
+- **Red de hilos**: El marcado inicial debe ubicar un token en la plaza *CAN RUN* de cada hilo, ya que cuando el hilo ingresa por primera vez al *scheduler* para ser encolado, ya ha sido inicializado (*INACTIVE → CAN RUN* ejecutado). Sin embargo, hay un hilo especial, con ID `100000`, que es responsable de inicializar al resto. Este hilo comenzará en el estado *RUNNING*, ya que está ejecutándose en la CPU0 desde el inicio.
+
+- **Red de recursos**: La red comenzará con un token en la plaza que indica que el sistema está en modo monoprocesador. Además, las plazas que representan a las CPUs se inicializan con un token, excepto la de la CPU0, que ya está ejecutando el hilo inicial del sistema. Por lo tanto, para la CPU0, el token debe colocarse en la plaza que indica que está en estado de ejecución.
+
+Finalmente, el comportamiento de los hilos de baja prioridad, que ocupan la CPU cuando no hay otros hilos disponibles, se abordará en el análisis de la implementación.
+
+
+
+#### Implementación del modelo
+
+
+
+1. **Eliminar en `petri_global_net.c` la transición jerárquica del thread a la transición de ejecución descartada**.
+   
+2. **Inicializar correctamente el marcado de los threads** en `init_petri_thread` de `sched_petri.c`. Notar que esta función, llamada al ser alocado en memoria un nuevo thread, nunca será llamada para el thread0 inicial.
+
+3. **Inicializar correctamente el marcado de la red de recursos** en la función `init_resource_net` de `petri_global_net.c`. Esta función se llamará al inicializar el *scheduler* en `sched_setup` de `sched_4bsd.c`.
+
+4. **Inicializar en la función `sched_init` de `sched_4bsd.c` el marcado del thread0**, función que es ejecutada únicamente por el mismo al inicializar el sistema.
+
+5. **Modificar la función `sched_choose` de `sched_4bsd.c` de la siguiente manera**:
+   - Si no se encuentra ningún thread para ejecutar en ninguna de las colas, se ejecutará la transición de encolado global del *idle thread*. Como los *idle threads* no se encuentran en las colas, para no perder el flujo de la red de los mismos, se los encolará "de pasaje" en la cola global.
+   - Inmediatamente después del desencolado, ejecutar la transición de desencolado global para finalizar el "pasaje" por la cola global.
+   
+6. **El tratamiento de los *idle threads* en `sched_switch` será igual al del resto de los threads** en cuanto a pasaje a ejecución y finalización de la misma. Solo no se los tendrá en cuenta a la hora de encolarlos cuando son expulsados de la CPU.
+
+7. **Dado que los *idle threads* también pueden sufrir cambios de contexto** (voluntarios o involuntarios), si `td_frominh` es igual a `1`, se deberá ejecutar la transición del thread que lo saca del estado de inhibido. Esto se realizará antes de encolar y desencolar el *idle thread* en `sched_choose`.
+
+
+<p align="center">
+    <img src="img/image32.png" alt="bloques">
+  </a>
+  </p>
+
+
+
+  #### Análisis de resultados
+
+El resultado esperado en cuanto al funcionamiento de los hilos de baja prioridad fue correcto. Esta nueva incorporación permitió realizar un análisis completo de las redes en ejecución, y los resultados en cuanto al seguimiento de sus marcados fueron los esperados para el modelado del sistema propuesto desde un inicio.
+
+Por otra parte, el agregado de los sistemas de control permitió corroborar en ejecución que las transiciones que controlan son en todo momento correctamente disparadas, sin encontrar momentos donde un hilo intente dispararlas sin encontrarse sensibilizadas.
+
+
+### MODELO FINAL 📋✅
+
+<p align="center">
+    <img src="img/image33.png" alt="bloques">
+<figcaption>Estados de 1 hilo</figcaption>
+    </figure>
+  </a>
+</p>
+
+<p align="center">
+    <img src="img/image36.png" alt="bloques">
+<figcaption>Recursos de 1 solo CPU</figcaption>
+    </figure>
+  </a>
+</p>
+
+<p align="center">
+    <img src="img/image34.png" alt="bloques">
+  <figcaption>COMPLETO 4 CPU - Recursos</figcaption>
+    </figure>
+  </a>
+</p>
+
+<p align="center">
+    <figure>
+      <img src="img/image35.png" alt="bloques">
+      <figcaption>Camino 1 solo CPU</figcaption>
+    </figure>
+  </a>
+</p>
+
+
+### Funciones principales
+
+Las funciones principales del scheduler implementado son:
+
+- **sched_add**: se encarga del encolado de los hilos. Hace uso de la función `resource_choose_cpu` para seleccionar la cola. Puede pasar al hilo directamente a ejecución si la función `maybe_preempt` lo determina.
+
+<p align="center">
+    <figure>
+      <img src="img/image37.png" alt="bloques">
+    </figure>
+  </a>
+</p>
+
+- **sched_choose**: se encarga de desencolar al hilo de mayor prioridad, fijándose tanto en la cola de la CPU actual como en la cola global.
+
+<p align="center">
+    <figure>
+      <img src="img/image38.png" alt="bloques">
+    </figure>
+  </a>
+</p>
+
+
+
+- **sched_rem**: se encarga de remover al hilo de la cola, el cual debe ser reubicado. Hace uso de la función `resource_remove_thread`.
+
+<p align="center">
+    <figure>
+      <img src="img/image39.png" alt="bloques">
+    </figure>
+  </a>
+</p>
+
+
+- **sched_switch**: se encarga de expulsar al hilo actual en ejecución haciendo uso de la función `resource_expulse_thread`, reubicarlo en una cola y seleccionar el próximo a ejecutar mediante `choose_thread` para mandarlo a ejecución usando la función `resource_execute_thread`.
+
+<p align="center">
+    <figure>
+      <img src="img/image40.png" alt="bloques">
+    </figure>
+  </a>
+</p>
+
+- **sched_throw**: igual a `sched_switch`, con la diferencia de que no reubica en una cola al hilo saliente ya que el mismo ha finalizado su ejecución.
+
+<p align="center">
+    <figure>
+      <img src="img/image41.png" alt="bloques">
+    </figure>
+  </a>
+</p>
