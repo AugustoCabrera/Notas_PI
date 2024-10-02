@@ -636,3 +636,77 @@ Las funciones principales del scheduler implementado son:
     </figure>
   </a>
 </p>
+
+
+---
+
+# 02-PI-Drudi-Goldman 🚀
+
+
+## Encolado (add)
+
+El sistema utiliza 64 colas, seleccionando una cola para un hilo determinado dividiendo su prioridad entre 4. Para ahorrar tiempo, los hilos dentro de cada cola no se reorganizan por prioridades. Estas colas pueden ser de los siguientes tipos: **run queue**, **turnstile queue** o **sleep queue**.
+
+- Los hilos en estado **RUNNABLE** se ubican en las **run queue**.
+- Los hilos bloqueados o esperando un evento se colocan en las **turnstile queue** o **sleep queue**.
+
+### Comportamiento del sistema
+
+- Si un hilo agota su tiempo permitido, se coloca al final de la cola de la que procede, y el próximo hilo en la cola se selecciona para ejecutarse.
+- Si un hilo se bloquea, se coloca en una **turnstile queue** o **sleep queue**, en lugar de regresar a la **run queue**.
+
+### Función `sched_add()`
+
+La operación de encolado se realiza en la función `sched_add()`, que recibe como parámetros el hilo a encolar y algunos flags con información sobre este. Las etapas principales del proceso son las siguientes:
+
+1. **Verificación del estado del hilo**: El hilo debe estar en estado **CAN RUN** o **RUNNING** para ser encolado. Si cumple con esta condición, se adquiere el lock del planificador y el hilo pasa al estado **RUNQ**.
+   
+2. **Selección de la cola de CPU**: Se utiliza la función `sched_pickcpu()` para elegir el CPU en el cual se encolará el hilo. Este proceso se realiza en varias etapas:
+   - Se verifica si el hilo ya había sido ejecutado en un CPU previo. Si es posible, se intenta reencolarlo en el mismo procesador; si no, se asigna el valor **NOCPU** (-1).
+   - Se itera sobre cada CPU disponible en el sistema y se verifica si es permitido encolar en dicho CPU.
+   - Dependiendo del valor de la variable que indica el CPU previo:
+     - Si la variable es **NOCPU**, se asigna el CPU actual de la iteración.
+     - Si la variable tiene un CPU asignado, se compara la cantidad de procesos en la cola del CPU actual con el del CPU anterior. Si el CPU actual tiene menos hilos, se selecciona este.
+   - Al finalizar la iteración, se retorna el CPU más adecuado para el hilo.
+
+3. **Encolado en la cola del CPU**: Una vez seleccionado el CPU, se realizan los cambios de contexto necesarios para agregar el hilo a la cola del procesador. Si el CPU seleccionado es diferente al CPU en ejecución actual, se envía una señal **IPI** (inter-processor interrupt) para notificar al nuevo CPU sobre el hilo en su cola.
+
+4. **Preemption**: Si el hilo se encola en el CPU actual, se verifica si tiene mayor prioridad que el hilo en ejecución. Si es así, se procede con la **preemptión**, reemplazando al hilo actual con el nuevo.
+
+
+
+
+## Cambios de contexto (switch y throw)
+
+En el sistema, los cambios de contexto de los hilos se gestionan principalmente mediante dos funciones clave: **`sched_switch()`** y **`sched_throw()`**.
+
+### Función `sched_switch()`
+
+Esta función expulsa al hilo que recibe como parámetro, el cual es el hilo actual en ejecución. Si por alguna razón el hilo continúa en estado **RUNNING**, se reencola utilizando la función **`sched_add()`**. El proceso se detalla a continuación:
+
+1. **Expulsión del hilo**: El hilo actual es expulsado y marcado como **NO RUNNING**. Si sigue en estado **RUNNING**, se lo reencola.
+   
+2. **Selección de un nuevo hilo**: Una vez expulsado el hilo anterior, se utiliza la función **`choosethread()`** junto con **`sched_choose()`** para seleccionar un nuevo hilo de la cola.
+   
+3. **Cambio de contexto**: Si el hilo seleccionado es diferente al anterior, se procede al cambio de contexto usando la función **`cpu_switch()`**. Esta función guarda el contexto del hilo anterior y restaura el contexto del nuevo hilo. Además, marca el nuevo hilo con el estado **TD_RUNNING**, asegurando que está en ejecución.
+
+### Función `sched_throw()`
+
+La función **`sched_throw()`** realiza un cambio de contexto similar, pero está diseñada para manejar la expulsión de un hilo que ha finalizado su ejecución, y que no necesita ser reubicado en una cola. El proceso es el siguiente:
+
+1. **Expulsión del hilo**: El hilo que recibe como parámetro (que puede ser nulo) es removido del planificador, liberando sus recursos.
+   
+2. **Selección de un nuevo hilo**: Al igual que en `sched_switch()`, se utiliza **`choosethread()`** para seleccionar un nuevo hilo para ejecutarse en el mismo CPU.
+
+3. **Continuación de la ejecución**: Si se selecciona un nuevo hilo, la ejecución continúa con este nuevo contexto.
+
+Ambas funciones aseguran una correcta gestión de los hilos, manteniendo el estado del sistema y asegurando que siempre haya un hilo listo para ejecutarse.
+
+
+
+<p align="center">
+    <figure>
+      <img src="img/image43.png" alt="bloques">
+    </figure>
+  </a>
+</p>
