@@ -562,12 +562,35 @@ Por otra parte, el agregado de los sistemas de control permitió corroborar en e
   </a>
 </p>
 
+
+
 <p align="center">
     <img src="img/image36.png" alt="bloques">
 <figcaption>Recursos de 1 solo CPU</figcaption>
     </figure>
   </a>
 </p>
+
+| **Transición**         | **Descripción**                                                                 | **Condiciones/Acciones/Resultados**                                                      |
+|------------------------|---------------------------------------------------------------------------------|------------------------------------------------------------------------------------------|
+| **ADDTOQUEUE (Ti+1)**          | Un hilo es agregado a la cola del CPU correspondiente.                         | Inhibida en modo monoprocesador o cuando ya existe un hilo en la cola.                   |
+| **UNQUEUE**             | Se quita el hilo próximo a ejecutar de la cola del CPU.                         | El hilo está listo para ser ejecutado.                                                   |
+| **EXEC i**                | El hilo pasa a ejecución, ocupando el recurso del procesador.                   | Elimina el token de la plaza de habilitación; inhibida en modo monoprocesador.            |
+| **EXECEMPTY i**          | Igual que EXEC, pero no depende de la plaza de habilitación.                    | Usada para hilos provenientes de la cola global.                                         |
+| **RETURN VOL CPU i**          | Retorno del procesador para ejecutar otro hilo de su cola.                     | Ocurre cuando el hilo está esperando un evento o recurso.                                |
+| **RETURN INVOL CPU i**        | Funciona igual que RETURN VOL.                                                  | Ocurre cuando el hilo agotó su tiempo de CPU o completó su tarea.                        |
+| **FROM GLOBAL CPU (TG)**     | Desencolado de un hilo desde la cola global.                                    |                                                                                          |
+| **REMOVEQUEUE i**        | Expulsa un hilo de la cola y resta un token de habilitación de la CPU.          | Permite que otro hilo sea encolado.                                                      |
+| **REMOVEEMPTYQUEUE i**  | Igual que REMOVE QUEUE, pero se ejecuta sin ningún token en la plaza de habilitación. |                                                                                          |
+| **REMOVE_GLOBAL** | Expulsa un hilo de la cola global sin premiar a la CPU.                        |                                                                                          |
+| **START SMP**           | Se dispara cuando el sistema pasa de monoprocesador a multiprocesador.          |                                                                                          |
+| **THROW**               | Se ejecuta cuando todas las plazas de habilitación de las CPU tienen al menos un token. | Habilita las colas con menor cantidad de hilos que estaban inhibidas.                    |
+| **QUEUE GLOBAL**        | Agrega un hilo a la cola global.                                                |                                                                                          |
+
+---
+
+
+
 
 <p align="center">
     <img src="img/image34.png" alt="bloques">
@@ -710,3 +733,131 @@ Ambas funciones aseguran una correcta gestión de los hilos, manteniendo el esta
     </figure>
   </a>
 </p>
+
+## Elección de hilos (choose)
+
+La elección del próximo hilo a ejecutar se realiza mediante la función **`sched_choose()`**, la cual es invocada por la función **`choosethread()`**.
+
+### Funcionamiento
+
+El objetivo de **`sched_choose()`** es seleccionar el hilo con mayor prioridad disponible para ser ejecutado, eligiéndolo entre las colas del CPU y la cola global. Los hilos en estado **RUNNABLE** son aquellos que están habilitados para ser ejecutados y cada uno tiene una prioridad asignada.
+
+El proceso es el siguiente:
+
+1. **Obtención de hilos**: La función obtiene el primer hilo de la cola global y el primer hilo de la cola del CPU. Estos hilos son almacenados en dos variables separadas.
+
+2. **Comparación de prioridades**: A continuación, se comparan las prioridades de ambos hilos. El hilo con mayor prioridad será el elegido para continuar con la ejecución.
+
+3. **Remoción del hilo**: Una vez seleccionado el hilo de mayor prioridad, este se elimina de su cola correspondiente, ya sea la global o la del CPU.
+
+4. **Caso de colas vacías**: Si ambos hilos son nulos (es decir, si no hay hilos disponibles para ejecutar), se retorna el **idle thread** simulando una ejecución con este hilo.
+
+De esta manera, el sistema garantiza que siempre se elige el hilo más apropiado para ser ejecutado en función de las prioridades y el estado de las colas.
+
+
+## Remoción de hilos de la cola (rem)
+
+A diferencia de la función **`sched_choose()`**, en la que un hilo es removido de la cola para ser ejecutado, la función **`sched_rem()`** tiene como propósito quitar un hilo (especificado como parámetro) de su cola por dos razones principales:
+
+1. **Ajuste de prioridad**: 
+   Si el hilo cambia de prioridad, es necesario removerlo de su cola actual y volver a encolarlo en la posición adecuada según su nueva prioridad. Este proceso se realiza llamando primero a **`sched_rem()`** para quitar el hilo, seguido de **`sched_add()`** para volver a encolarlo en la cola correcta.
+
+2. **Afinidad con CPU**: 
+   Cuando un hilo tiene afinidad con un CPU específico, también es necesario removerlo de su cola actual y volver a encolarlo en la cola del CPU correspondiente. Esto asegura que el hilo se ubique en la cola del procesador más adecuado para su ejecución, siguiendo el mismo proceso de remoción y reubicación mencionado anteriormente.
+
+Esta función es fundamental para mantener el orden adecuado de los hilos en el sistema y asegurar que los cambios en las prioridades o afinidades sean gestionados correctamente.
+
+## Remoción de hilos de la cola (rem)
+
+A diferencia de la función **`sched_choose()`**, en la que un hilo es removido de la cola para ser ejecutado, la función **`sched_rem()`** tiene como propósito quitar un hilo (especificado como parámetro) de su cola por dos razones principales:
+
+1. **Ajuste de prioridad**: 
+   Si el hilo cambia de prioridad, es necesario removerlo de su cola actual y volver a encolarlo en la posición adecuada según su nueva prioridad. Este proceso se realiza llamando primero a **`sched_rem()`** para quitar el hilo, seguido de **`sched_add()`** para volver a encolarlo en la cola correcta.
+
+2. **Afinidad con CPU**: 
+   Cuando un hilo tiene afinidad con un CPU específico, también es necesario removerlo de su cola actual y volver a encolarlo en la cola del CPU correspondiente. Esto asegura que el hilo se ubique en la cola del procesador más adecuado para su ejecución, siguiendo el mismo proceso de remoción y reubicación mencionado anteriormente.
+
+Esta función es fundamental para mantener el orden adecuado de los hilos en el sistema y asegurar que los cambios en las prioridades o afinidades sean gestionados correctamente.
+
+## Modelado del planificador
+
+
+<p align="center">
+    <figure>
+      <img src="img/image44.png" alt="bloques">
+    </figure>
+  </a>
+</p>
+
+
+
+Para conectar las redes de hilos con la red de recursos de las CPU, se emplea el concepto de **redes jerárquicas**. Esto implica que cuando se dispara una transición en la red de recursos, debe dispararse simultáneamente una transición correspondiente en la red del hilo. Esta estructura permite sincronizar y coordinar las acciones entre las diferentes redes, asegurando que el estado de los recursos y los hilos permanezcan alineados. La jerarquía de redes garantiza que las decisiones en la asignación de recursos (como las CPU) afecten directamente el comportamiento de los hilos en ejecución.
+
+
+
+<p align="center">
+    <figure>
+      <img src="img/image45.png" alt="bloques">
+    </figure>
+  </a>
+</p>
+
+
+
+
+---
+
+# 03-PI-Bonino-Daniele 🚀
+
+
+## Compilación del Kernel
+
+Al tratarse de desarrollo a nivel de kernel, para ver reflejados en el sistema los cambios realizados sobre el código es necesario recompilar el kernel con los archivos nuevos o modificados. Los archivos compilados por el kernel se encuentran dentro del source tree, cuyo path por defecto es `/usr/src/sys/`. Este proceso puede llevar mucho tiempo, por lo que es importante conocerlo a fondo y optimizarlo lo máximo posible.
+
+El primer paso fue reducir el kernel lo más posible, modificando la configuración por defecto para deshabilitar todos los módulos que no se necesitan en las máquinas virtuales. Una vez configurado y compilado este kernel minimalista, se empezó a trabajar en la actualización de los módulos de los proyectos integradores mencionados anteriormente. Para ello, se agregaron los archivos fuente de estos módulos a la configuración del kernel para tenerlos en cuenta durante la compilación.
+
+### Módulos Incorporados
+
+#### Módulo Metadata ELF FreeBSD
+Este módulo comprende los siguientes archivos:
+
+- `kern/metadata_elf_reader.c`
+- `sys/metadata_elf_reader.h`
+- `sys/metadata_payloads.h`
+
+Y modifica los siguientes archivos:
+
+- `kern/imgact_elf.c`
+- `kern/kern_exec.c`
+- `sys/proc.h`
+
+Este trabajo fue originalmente desarrollado sobre **FreeBSD 12.3**, por lo que las modificaciones realizadas en **FreeBSD 13.2** no trajeron grandes dificultades para adaptar el módulo, ya que no afectaron la funcionalidad de las secciones del código donde se implementa. Por ello, se agregaron solo las líneas y funciones necesarias, se incluyeron en el kernel y se recompiló el sistema.
+
+Una vez compilado el nuevo kernel, se probó su funcionamiento utilizando los plugins **CLang** y **GCC** para insertar metadata en los ejecutables **ELF** y leerla en espacio de kernel.
+
+#### Módulo Petri Net Scheduler
+Este módulo comprende los siguientes archivos:
+
+- `kern/petri_global_net.c`
+- `sys/petri_global_net.h`
+- `kern/sched_petri.c`
+- `sys/sched_petri.h`
+
+Y modifica los siguientes archivos:
+
+- `kern/sched_4bsd.c`
+- `kern/kern_thread.c`
+- `sys/proc.h`
+
+Este proyecto fue desarrollado en **FreeBSD 11**, por lo que debido a los cambios entre versiones, la adaptación a la nueva versión del kernel fue más complicada, ya que algunas funciones del scheduler, modelado con la red de Petri, sufrieron modificaciones en su comportamiento.
+
+La mayor parte del código desarrollado por el equipo se integró en sus respectivos archivos sin dificultad, excepto el código en la función `sched_switch`, que se encarga de expulsar un hilo en ejecución y seleccionar uno nuevo para reemplazarlo.
+
+Una vez compilado el kernel con las modificaciones mencionadas, se comenzó a utilizar el nuevo **scheduler** y se realizaron pruebas para evaluar su comportamiento.
+
+
+## Análisis de los Resultados
+
+Luego del proceso de actualización del código de los proyectos integradores a la versión **13.2 de FreeBSD**, se comenzó a utilizar el sistema operativo con el kernel compilado con los nuevos archivos, logrando el objetivo de la iteración. Sin embargo, se observó un problema en el código de selección de núcleos de la CPU en el scheduler modelado con la red de Petri. Este nuevo código modificaba el comportamiento original del scheduler **4BSD**, ignorando la afinidad de los hilos (flags `td_pinned`, `TDF_BOUND` y `TSF_AFFINITY`).
+
+Debido a esto, se decidió regresar al esquema original de selección de núcleos, respetando la afinidad de los hilos, pero tomando las decisiones basadas en el modelo de la red de Petri. Durante este proceso, se experimentaron **kernel panics** de manera constante, por lo que se identificó que el siguiente paso sería resolver este problema.
