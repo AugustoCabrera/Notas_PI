@@ -809,8 +809,10 @@ Para conectar las redes de hilos con la red de recursos de las CPU, se emplea el
 
 # 03-PI-Bonino-Daniele 🚀
 
+## Primera iteración 📋
 
-## Compilación del Kernel
+
+### Compilación del Kernel
 
 Al tratarse de desarrollo a nivel de kernel, para ver reflejados en el sistema los cambios realizados sobre el código es necesario recompilar el kernel con los archivos nuevos o modificados. Los archivos compilados por el kernel se encuentran dentro del source tree, cuyo path por defecto es `/usr/src/sys/`. Este proceso puede llevar mucho tiempo, por lo que es importante conocerlo a fondo y optimizarlo lo máximo posible.
 
@@ -856,8 +858,174 @@ La mayor parte del código desarrollado por el equipo se integró en sus respect
 Una vez compilado el kernel con las modificaciones mencionadas, se comenzó a utilizar el nuevo **scheduler** y se realizaron pruebas para evaluar su comportamiento.
 
 
-## Análisis de los Resultados
+#### Análisis de los Resultados
 
 Luego del proceso de actualización del código de los proyectos integradores a la versión **13.2 de FreeBSD**, se comenzó a utilizar el sistema operativo con el kernel compilado con los nuevos archivos, logrando el objetivo de la iteración. Sin embargo, se observó un problema en el código de selección de núcleos de la CPU en el scheduler modelado con la red de Petri. Este nuevo código modificaba el comportamiento original del scheduler **4BSD**, ignorando la afinidad de los hilos (flags `td_pinned`, `TDF_BOUND` y `TSF_AFFINITY`).
 
 Debido a esto, se decidió regresar al esquema original de selección de núcleos, respetando la afinidad de los hilos, pero tomando las decisiones basadas en el modelo de la red de Petri. Durante este proceso, se experimentaron **kernel panics** de manera constante, por lo que se identificó que el siguiente paso sería resolver este problema.
+
+
+## Segunda iteración 📋
+
+Solucionar el problema relacionado con el escenario donde el nuevo modelo de scheduler ignoraba la afinidad de los procesos a algún núcleo de la CPU.
+
+
+
+
+---
+
+# 04-PI-Cabrera 💫
+
+## Compilación del Kernel en FreeBSD
+
+El kernel es la interfaz crucial entre el software y el hardware, permitiendo aprovechar eficientemente los recursos del sistema.
+
+
+<p align="center">
+    <figure>
+      <img src="img/image46.png" alt="bloques">
+    </figure>
+  </a>
+</p>
+
+
+
+
+### ¿Por qué usar un kernel personalizado?
+
+Un kernel personalizado ofrece varias ventajas clave, tales como:
+
+- Ajuste preciso al hardware específico que se va a utilizar.
+- Creación o adición de nuevos drivers, lo que permite funcionalidades adicionales y modifica el comportamiento del sistema.
+- Reducción del tamaño del kernel para equipos con recursos limitados.
+- Mejora en el rendimiento general del sistema.
+
+### Kernel Genérico vs Kernel Personalizado
+
+**Kernel Genérico:** Es el kernel predeterminado de FreeBSD, diseñado para soportar una amplia variedad de hardware.
+
+
+ | **KERNEL PERSONAL**                                       | **KERNEL GENÉRICO**                                   |
+|-----------------------------------------------------------|-------------------------------------------------------|
+| Agregar nuevos drivers                                    | Gran cantidad de drivers                              |
+| Eliminar drivers no usados                                | Funciones básicas                                     |
+| Habilitar funciones                                       | No está optimizado                                    |
+| Deshabilitar opciones que no usas                         |                                                       |
+| Optimizar para mejor rendimiento                          |                                                       |
+| Aprender a compilar                                       |                                                       |
+
+#### ¿Por qué personalizar el kernel si el genérico funciona?
+
+Aunque el kernel genérico de FreeBSD suele funcionar bien, personalizar el kernel ofrece varias ventajas clave:
+
+- **Agregar soporte para hardware no incluido**: Puedes añadir drivers específicos para hardware que no está soportado en el kernel genérico.
+- **Eliminar drivers innecesarios**: Eliminar soporte para hardware que no utilizas optimiza el uso de recursos y reduce el tamaño del kernel.
+- **Habilitar funciones adicionales**: Puedes activar funcionalidades que no están habilitadas en el kernel genérico.
+- **Deshabilitar funciones no deseadas**: Desactivar funciones que no necesitas puede mejorar la seguridad y el rendimiento.
+
+Por ejemplo, compilar un kernel para un servidor será muy diferente a hacerlo para un sistema con entorno gráfico. No es lo mismo compilar un kernel para una computadora con 1 GB de RAM y un CPU de un solo núcleo que para una máquina con 64 GB de RAM, un CPU de 8 núcleos y 16 hilos. Adaptar el kernel a tus necesidades permite maximizar el rendimiento y la eficiencia de los recursos disponibles.
+
+#### que necesitamos para compilar el kernel personalizado?
+
+Necesitamos el código fuente en el sistema. 
+
+<p align="center">
+    <figure>
+      <img src="img/image47.png" alt="bloques">
+    </figure>
+  </a>
+</p>
+
+ **Consideraciones al Personalizar el Kernel en FreeBSD**
+
+1. **Configurar `freebsd-update` en la rama RELEASE**: Asegúrate de configurarlo para que no sobrescriba el kernel personalizado, ya que FreeBSD integra el kernel con las funcionalidades y librerías del sistema.
+   
+2. **Leer el archivo `/usr/src/UPDATING`**: Este archivo contiene información crucial sobre los cambios aplicados en el código fuente. Es importante revisarlo antes de compilar.
+
+3. **Compilar tanto el kernel como el sistema (`world`)**: Si trabajas en las ramas STABLE o CURRENT, deberás compilar ambos cuando realices actualizaciones.
+
+4. **Hacer una copia de seguridad del kernel**: Guarda una copia del kernel genérico o el último kernel que funcionó correctamente antes de realizar modificaciones.
+
+5. **Conservar los archivos de configuración del kernel personalizado**: Estos archivos te permitirán compilar un nuevo kernel con las mismas configuraciones que el kernel anterior.
+
+6. **Compilar varias veces**: Es posible que necesites compilar el kernel varias veces hasta obtener una versión optimizada para tu sistema.
+
+7. **Aprender las diferentes opciones del kernel**: Familiarízate con las opciones disponibles en el kernel para aprovechar al máximo la personalización y optimización.
+
+
+
+### Compilar un Kernel personalizado en la rama `RELEASE`
+
+La rama `RELEASE` es la que contiene la herramienta `freebsd-update`, la cual nos permite actualizar el sistema operativo a nivel de parches (nueva versión) utilizando paquetes precompilados.
+
+Al actualizar, hay cuatro áreas principales que se pueden modificar:
+
+1. **Kernel**
+2. **World o Espacio de Usuario** (utilidades/librerías)
+3. **Doc** (documentación del sistema)
+4. **Código fuente de FreeBSD**
+
+Si deseamos modificar el kernel, este debe estar sincronizado con la misma versión de `world` y del código fuente. Para verificar la versión de FreeBSD que estamos utilizando, podemos usar el comando:
+
+```bash
+freebsd-version -k
+```
+
+Si queremos saber el espacio de usuario o World:
+
+```bash
+freebsd-version -u
+```
+
+<p align="center">
+    <figure>
+      <img src="img/image48.png" alt="bloques">
+    </figure>
+  </a>
+</p>
+
+### Instalación y actualización de FreeBSD
+
+Cuando se instala el sistema operativo FreeBSD por primera vez, tenemos la opción de instalar también el código fuente, que se ubica en `usr/src`. Este código se va actualizando con cada `UPDATE`. Sin embargo, no siempre las versiones del kernel y del sistema coinciden, ya que en muchos casos solo se actualiza una parte del sistema.
+
+#### ¿Qué ocurre al actualizar el sistema con un kernel personalizado?
+
+Si combinamos el kernel de mi versión personalizada y luego actualizamos el sistema, pueden ocurrir algunos problemas:
+
+1. **Sobreescritura del kernel**: El kernel precompilado podría sobrescribir mi kernel personalizado.
+2. **Desincronización**: Si FreeBSD está configurado para no actualizar el núcleo (`kernel`), podría romperse la sincronización entre el kernel y los archivos del sistema, lo que puede generar errores.
+
+Vamos a explicar esto con un ejemplo práctico. Supongamos que estamos en un sistema con una nueva instalación de FreeBSD de la rama `release` y que el código fuente ya está instalado.
+
+#### Directorio del kernel en FreeBSD
+
+El kernel por defecto siempre se instala en la carpeta `/boot/kernel`. Cuando compilamos e instalamos un nuevo kernel, el directorio actual `/boot/kernel` se renombra y se reserva, dejando `/boot/kernel` para el nuevo núcleo. El cargador de arranque BTX busca automáticamente en la carpeta `/boot` todos los kernels instalados, permitiéndonos elegir con cuál iniciar. Sin embargo, por defecto siempre arrancará con el kernel ubicado en `/boot/kernel`.
+
+#### Comprobación del tamaño del kernel
+
+Podemos verificar el tamaño del kernel que viene con la versión en uso mediante el comando:
+
+`du -sh /boot/kernel`
+
+Esto nos mostrará el tamaño total en megabytes junto con los módulos que están en la misma carpeta. Si deseamos ver el tamaño exacto del archivo del kernel, podemos usar:
+
+`du -sh /boot/kernel/kernel`
+
+En este caso, comprobamos que tiene un tamaño de 15 megabytes.
+
+<p align="center">
+  <figure>
+    <img src="img/image49.png" alt="bloques">
+  </figure>
+</p>
+
+
+#### Revisión del archivo UPDATING
+
+Voy a leer el archivo `/usr/src/UPDATING` para verificar si existe alguna indicación especial para compilar el kernel. Vemos que **NO** se informa de nada en particular, tampoco se menciona que FreeBSD ha cambiado el compilador de `gcc` a `clang`. Al final del archivo también se detallan los procedimientos para compilar el kernel o instalarlo, así como para recopilar todo el sistema y verificar su correcto funcionamiento.
+
+
+ 
+ 
+ 
+ 
