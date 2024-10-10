@@ -1022,10 +1022,209 @@ En este caso, comprobamos que tiene un tamaño de 15 megabytes.
 
 #### Revisión del archivo UPDATING
 
-Voy a leer el archivo `/usr/src/UPDATING` para verificar si existe alguna indicación especial para compilar el kernel. Vemos que **NO** se informa de nada en particular, tampoco se menciona que FreeBSD ha cambiado el compilador de `gcc` a `clang`. Al final del archivo también se detallan los procedimientos para compilar el kernel o instalarlo, así como para recopilar todo el sistema y verificar su correcto funcionamiento.
+Leer el archivo `/usr/src/UPDATING` para verificar si existe alguna indicación especial para compilar el kernel. Vemos que **NO** se informa de nada en particular, tampoco se menciona que FreeBSD ha cambiado el compilador de `gcc` a `clang`. Al final del archivo también se detallan los procedimientos para compilar el kernel o instalarlo, así como para recopilar todo el sistema y verificar su correcto funcionamiento.
 
 
- 
- 
- 
- 
+
+Llegados a este punto, tenemos dos opciones:
+
+1. **Hacer una copia del kernel actual (genérico)** para asegurarnos de que, si el nuevo kernel falla, podamos usar el kernel que ya funciona.
+2. **Instalar el nuevo kernel en una carpeta nueva** y arrancar FreeBSD con él para evaluar su comportamiento.
+
+Si optamos por hacer una copia del kernel actual, podemos usar el siguiente comando:  
+`cp -a /boot/kernel /boot/kernel-14.1-RELEASE-GENERIC`
+
+De esta manera, identificamos el kernel genérico de la versión 14.1 como una copia de seguridad, ya que este es el que viene por defecto.
+
+Para mayor seguridad, vamos a usar la segunda opción e instalaremos el nuevo kernel en una carpeta diferente.
+
+
+Antes de compilar un kernel, es muy recomendable conocer el hardware de nuestro equipo: la marca, el modelo de los componentes y los dispositivos integrados en la placa madre (mainboard). Esto nos permitirá determinar con precisión si el hardware es compatible con FreeBSD o si necesitamos incluir algún driver adicional en el kernel antes de compilarlo.
+
+El archivo ubicado en `/var/run/dmesg.boot` es un buen punto de partida para obtener información sobre el hardware del equipo.
+
+
+
+Dicho esto, nos desplazamos al directorio `cd /usr/src/sys/amd64/conf`. Una vez dentro de este directorio, podemos ver su contenido, donde encontramos varios ficheros que contienen configuraciones para el kernel. 
+
+<p align="center">
+  <figure>
+    <img src="img/image50.png" alt="bloques">
+  </figure>
+</p>
+
+FreeBSD no cuenta con una utilidad gráfica ni con un sistema basado en menús para configurar el kernel; solo utiliza archivos de texto donde se incluyen líneas con etiquetas y cadenas que definen la configuración del núcleo.
+
+Si examinamos el contenido de este directorio, veremos el archivo *GENERIC*, que es el archivo utilizado por el equipo de FreeBSD para compilar el kernel de la versión que estamos utilizando. Este archivo se denomina *GENERIC* porque es el predeterminado. Además, incluye el fichero *DEFAULTS*, que contiene un listado de opciones y dispositivos predeterminados de la plataforma. 
+
+También encontramos el archivo *MINIMAL*, que contiene una configuración muy reducida, en la que todo lo que sea posible se carga como un módulo. Por último, está el archivo *NOTES*, que contiene una extensa lista de todas las opciones posibles que podemos utilizar para la plataforma específica.
+
+
+Otro archivo importante es *NOTES*, ubicado en `less /usr/src/sys/conf/NOTES`. Este archivo contiene todas las características del kernel que son independientes de la plataforma. 
+
+Los archivos *NOTES* incluyen descripciones detalladas y una gran cantidad de información sobre las opciones y dispositivos que podemos agregar al kernel.
+
+
+
+
+
+
+
+Vamos a trabajar con las opciones de configuración del archivo *GENERIC*. Pero antes de ver su contenido, crearemos una copia con el nombre que queramos utilizando el siguiente comando:
+
+`cp GENERIC KERNELOPTIONS`
+
+Este será el archivo que usaré para configurar el nuevo kernel. Lo abrimos con un editor:
+
+`vi KERNELOPTIONS`
+
+<p align="center">
+  <figure>
+    <img src="img/image51.png" alt="bloques">
+  </figure>
+</p>       
+
+Observamos algunas etiquetas, como `cpu`, que le indica al kernel qué tipo de procesador admitirá. En mi caso, *HAMMER* es para todo el hardware de la plataforma amd64 o m64t. La etiqueta `IDENT` proporciona un nombre de identificación del kernel; en mi caso, voy a cambiar *GENERIC* por *KERNELCUSTOM01*, con una numeración (01) para incrementar el número a medida que compile distintos kernels.
+
+<p align="center">
+  <figure>
+    <img src="img/image52.png" alt="bloques">
+  </figure>
+</p>
+
+La etiqueta `makeoptions` proporciona instrucciones de compilación a la herramienta `make`, y si nos fijamos en la parte derecha, nos ofrece una breve descripción de lo que hace cada opción. Por ejemplo, `DEBUG=-g` compila el kernel con símbolos de depuración.
+
+La siguiente etiqueta que podemos apreciar es `option`, que se refiere a funciones del kernel que requieren hardware en particular. Estas son tecnologías o características que el kernel puede utilizar para su funcionamiento. Por ejemplo, el planificador del kernel, que se llama *ULE*, lo modificaré a *4BSD* para el desarrollo de este trabajo.
+
+Además, podemos desactivar la compatibilidad con FreeBSD hasta la versión 11. En este caso, la mayoría del software estará compilado para al menos versiones de FreeBSD superiores a la 9. Estas opciones deshabilitadas pueden aumentar el rendimiento del sistema, pero también corremos el riesgo de no poder ejecutar algunas aplicaciones antiguas, por esta razón no las deshabilitaré.
+
+<p align="center">
+  <figure>
+    <img src="img/image53.png" alt="bloques">
+  </figure>
+</p>
+
+Ahora vemos otra etiqueta llamada `device` que nos proporciona controladores de dispositivos o drivers al kernel, evitando que se carguen como módulos. Así podemos deshabilitar todas aquellas opciones que no vayamos a usar, reduciendo el tamaño del kernel y, potencialmente, mejorando el rendimiento del sistema. Por ejemplo, si no tenemos unidades de disquete, podemos comentar el controlador para que no lo incluya, o quitar controladores hasta que solo tengamos los necesarios.
+
+La configuración del kernel es muy personal, y cada usuario puede activar o desactivar distintas opciones o drivers según su hardware o sus necesidades.
+
+Guardamos los cambios, y ahora veamos cómo podemos agregar más ficheros a la configuración, en caso de que nos interese dividir opciones entre distintos archivos. Esto es muy útil cuando queremos separar opciones concretas de las opciones generales.
+
+Por ejemplo, voy a crear el fichero con `vi KERNELCUSTOM01` y voy a agregar la línea `include KERNELOPTIONS`. Esta línea nos permite incluir todas las opciones que hemos modificado en el archivo anterior.
+
+#### ¿Qué otras cosas podría hacer?
+
+Podemos agregar más líneas de opciones. Por ejemplo, podríamos incluir `options ZFS` para incluir el soporte del sistema de archivos ZFS en el kernel, o también `option DEVICE_POLLING`, que permite sondear dispositivos, reduciendo la sobrecarga de interrupciones y mejorando el rendimiento del sistema. También podemos agregar `option HZ=1000`, que regula la frecuencia en hercios del temporizador para el manejo de interrupciones. Un valor más bajo puede aumentar el rendimiento, pero también podría tener efectos perjudiciales.
+
+Vamos a probar esta configuración donde hemos eliminado componentes y funciones que no vamos a usar, y hemos añadido algunas otras que pueden ser útiles. Luego, compilaremos el kernel por primera vez para ver cómo funciona.
+
+<p align="center">
+  <figure>
+    <img src="img/image54.png" alt="bloques">
+  </figure>
+</p>
+
+Como vemos en la salida del comando, hemos generado dos archivos. Ahora pasamos a compilar el kernel con el comando `time make KERNCONF=KERNELCUSTOM01 KODIR=/boot/kernelcustom01 buildkernel installkernel`. Debemos estar en el directorio `/usr/src`.
+
+El comando tiene el propósito de construir e instalar un kernel personalizado en un sistema basado en FreeBSD. A continuación, se desglosan sus partes:
+
+- **`time`**: Mide y muestra cuánto tiempo tarda en ejecutarse el comando completo que sigue. Es útil para saber el tiempo de compilación e instalación del kernel.
+  
+- **`make`**: Ejecuta las instrucciones de construcción de un proyecto. En este caso, se usa para construir el kernel de FreeBSD con las configuraciones especificadas.
+
+- **`KERNCONF=KERNELCUSTOM01`**: Indica el archivo de configuración del kernel a utilizar, en este caso `KERNELCUSTOM01`, que contiene las configuraciones específicas del kernel que estás construyendo.
+
+- **`KODIR=/boot/kernelcustom01`**: Especifica el directorio donde se instalará el nuevo kernel. En este caso, se instalará en `/boot/kernelcustom01` en lugar del directorio por defecto (`/boot/kernel`), lo que permite tener múltiples versiones de kernel.
+
+- **`buildkernel`**: Construye el kernel basado en el archivo de configuración definido. Este proceso compila el código fuente del kernel.
+
+- **`installkernel`**: Instala el kernel compilado en el directorio especificado por `KODIR`. En este caso, instala el kernel en `/boot/kernelcustom01`.
+
+
+
+
+<p align="center">
+  <figure>
+    <img src="img/image55.png" alt="bloques">
+  </figure>
+</p>
+
+
+
+
+Una vez acabada la compilación, vemos en la salida del comando `time` que demoró 1560.64 segundos en total, lo que es equivalente a 26 minutos y 0.64 segundos. Si revisamos el contenido del directorio `/boot`, vemos que nos ha generado una nueva carpeta con el nombre que le pusimos al kernel.
+
+<p align="center">
+  <figure>
+    <img src="img/image56.png" alt="bloques">
+  </figure>
+</p>
+
+Ahora necesitamos reiniciar el sistema para iniciar con el nuevo kernel y comprobar que funciona correctamente, sin provocar ningún *kernel panic* o errores. Lo podemos hacer de dos formas:
+
+1. Reiniciando el sistema y eligiendo el nuevo kernel en el cargador de arranque **BTX**.
+2. Ejecutando el comando `nextboot -k kernelcustom01`, que nos permite ejecutar una sola vez el kernel que le indiquemos. Cuando reiniciemos el sistema, se cargará el kernel personalizado, pero en el siguiente reinicio volverá a usar el antiguo kernel. Esto es muy útil cuando estamos probando nuestros núcleos sin tener que modificar permanentemente la opción del kernel en el cargador **BTX**.
+
+Vamos a reiniciar el sistema, y si observamos el cargador de arranque **BTX**, veremos que el comando ha hecho su trabajo, ya que está eligiendo el kernel personalizado.
+
+<p align="center">
+  <figure>
+    <img src="img/image57.png" alt="bloques">
+  </figure>
+</p>
+
+<p align="center">
+  <figure>
+    <img src="img/image58.png" alt="bloques">
+  </figure>
+</p>
+
+<p align="center">
+  <figure>
+    <img src="img/image59.png" alt="bloques">
+  </figure>
+</p>
+
+El comando `uname -a` muestra que actualmente estamos utilizando el kernel personalizado llamado `KERNELCUSTOM01`. Aquí está el detalle relevante:
+
+- **Sistema operativo**: FreeBSD 14.1-RELEASE-p5
+- **Nombre del kernel**: `KERNELCUSTOM01`
+- **Arquitectura**: amd64
+
+Esto confirma que tu sistema está ejecutando el kernel personalizado que se configuro.
+
+
+Tenemos cargado el nuevo kernel y, de momento, parece que todo va muy bien. Incluso creo que se ha iniciado más rápido que el antiguo. Ahora que ya tenemos compilado el kernel y sabemos que funciona correctamente, podemos borrar el directorio `/boot/kernel` con el comando `rm -r /boot/kernel` y copiar el directorio `kernelcustom01` a `/boot/kernel` usando `cp -a /boot/kernelcustom01/ /boot/kernel`. Así, a partir de ahora, será el núcleo predeterminado. Recordemos que tenemos una copia del antiguo kernel que hicimos al principio.
+
+Ahora nos enfrentamos a una actualización del sistema. Si intentamos actualizar a nivel de parche con `freebsd-update fetch`, podemos observar en la salida que modifica el kernel. Si finalmente instalamos la actualización con el comando `freebsd-update install`, me instalará el nuevo kernel.
+
+#### ¿Cómo evitamos que la actualización del sistema sobrescriba el kernel personalizado estando en la rama release?
+Podemos evitar que la herramienta `freebsd-update` modifique el kernel al actualizar. Para hacerlo, debemos editar el archivo `/etc/freebsd-update.conf` y cambiar la línea de componentes, quitando la palabra `kernel`. Esto hará que la herramienta solo actualice el componente `src`, es decir, el código fuente, y también el `world`, pero no el kernel.
+
+<p align="center">
+  <figure>
+    <img src="img/image60.png" alt="bloques">
+  </figure>
+</p>
+
+
+
+Voy a volver a la configuración anterior a la actualización con el comando `freebsd-update rollback`, y después reiniciaremos el sistema. Ahora, al ejecutar nuevamente el comando `freebsd-update fetch`, veremos que volvemos a tener nuestro kernel personalizado, ya que hemos modificado la configuración.
+
+Ahora podemos observar que va a actualizar todo menos el kernel, así que podemos continuar con la instalación ejecutando `freebsd-update install`. Hay que tener en cuenta que las actualizaciones a nivel de parche no siempre afectan los mismos componentes; a veces solo son parches para el kernel, otras veces solo para el `world`, y en ocasiones son parches para todos los componentes.
+
+Nos movemos al directorio `/usr/src` y usamos el comando `make` como hicimos antes, pero esta vez no voy a usar la opción para guardar el kernel en un directorio. Prefiero que se instale en `/boot/kernel`: `make -j5 KERNCONF=KERNELCUSTOM01`.
+
+
+
+Ahora vamos a ser nosotros quienes sobrescribamos el *KERNELGENERIC*. Una vez compilado e instalado, reiniciamos el sistema y, al ejecutar el comando `uname -v`, vemos que tenemos de nuevo nuestro kernel personalizado. Además, en la salida del comando `freebsd-version -ku`, observamos que tanto el kernel como el `world` están actualizados al mismo nivel de parche, pero con nuestro kernel personalizado y compilado.
+
+Personalmente, no me gusta modificar el archivo `freebsd-update.conf` porque prefiero dejar que sobrescriba mi kernel personalizado cuando actualizo, y después compilar de nuevo usando el código fuente que ya ha actualizado la herramienta `freebsd-update`. Mi recomendación es actualizar siempre el sistema conforme a las instrucciones, sin modificar el archivo de configuración, y una vez finalizada la actualización, compilar nuestro kernel personalizado. Ya sea con actualizaciones a nivel de parche o con una nueva versión menor o principal, de esta forma siempre tendremos sincronía entre nuestro kernel, el `world`, y el código fuente.
+
+Otra cosa importante es guardar los archivos de configuración que hemos generado en una ruta independiente de `/usr/src`, ya que podemos perderlos al descargarnos un código fuente nuevo. Por eso, me creo una carpeta en `home` y mi usuario, que llamaré `config_kernel`, y copio mis archivos de configuración con el comando `cp`.
+
+<p align="center">
+  <figure>
+    <img src="img/image61.png" alt="bloques">
+  </figure>
+</p>
