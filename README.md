@@ -24,7 +24,6 @@ _En base a los 5 estados que se puede encontrar un hilo se obtiene:_
 
 <p align="center">
     <img src="img/image1.png" alt="bloques">
-  </a>
   </p>
 
 **T0**:  Momento de creación de un proceso o cuando el mismo realiza un fork. Esta tarea no corresponde al scheduler, por lo que inicialmente un hilo en el scheduler se encuentra inicializado en el estado `CAN RUN`. Esta transición nunca se dispara, solo se la incorpora al modelo de modo representativo.
@@ -47,7 +46,7 @@ _NOTA: Algunos valores presentan incongruencias, ya que corresponden a la versi�
 
 <p align="center">
     <img src="img/image2.png" alt="bloques">
-  </a>
+
   </p>
 
   Agregar a la estructura `thread` los siguientes campos:
@@ -58,7 +57,7 @@ _NOTA: Algunos valores presentan incongruencias, ya que corresponden a la versi�
 
 <p align="center">
     <img src="img/image3.png" alt="bloques">
-  </a>
+
   </p>
 
 
@@ -70,7 +69,7 @@ funciones declaradas anteriormente:
 
 <p align="center">
     <img src="img/image4.png" alt="bloques">
-  </a>
+
   </p>
 
 
@@ -81,7 +80,7 @@ funciones declaradas anteriormente:
 
 <p align="center">
     <img src="img/image5.png" alt="bloques">
-  </a>
+
   </p>
 
 ### Conclusion: Primera Interacción
@@ -98,7 +97,7 @@ En esta iteración se buscara proponer un modelo inicial de red de Petri para re
 
 <p align="center">
     <img src="img/image6.png" alt="bloques">
-  </a>
+
   </p>
 
 
@@ -116,7 +115,7 @@ y equitativa.
 
 <p align="center">
     <img src="img/image7.png" alt="bloques">
-  </a>
+
   </p>
 
 
@@ -126,7 +125,7 @@ y equitativa.
 
 <p align="center">
     <img src="img/image8.png" alt="bloques">
-  </a>
+
   </p>
 
 
@@ -138,7 +137,7 @@ su vez se implementaron las funciones declaradas anteriormente
 
 <p align="center">
     <img src="img/image9.png" alt="bloques">
-  </a>
+
   </p>
 
 
@@ -150,7 +149,7 @@ espacio de memoria para la red de recursos.
 
 <p align="center">
     <img src="img/image10.png" alt="bloques">
-  </a>
+
   </p>
 
 
@@ -166,7 +165,7 @@ CPU que conforman el sistema.
 
 <p align="center">
     <img src="img/image11.png" alt="bloques">
-  </a>
+
   </p>
 
 - Que la CPU este en condiciones de encolar: se disparara una transicion que pase el turno y agregue un token a la cola de esa CPU.
@@ -183,14 +182,14 @@ Esto se realiza en `sched_4bsd.c` en la función `sched_add`.
 
 <p align="center">
     <img src="img/image12.png" alt="bloques">
-  </a>
+
   </p>
 
  Llamar a `resource_fire_net` en `sched_add` para contemplar en la red el encolado de los threads que ingresan al scheduler en la CPU que le corresponda.
 
 <p align="center">
     <img src="img/image13.png" alt="bloques">
-  </a>
+
   </p>
 
 
@@ -204,7 +203,7 @@ si la CPU actual esta en condiciones de encolar.
 
 <p align="center">
     <img src="img/image14.png" alt="bloques">
-  </a>
+
   </p>
 
   ### Implementación
@@ -214,7 +213,7 @@ Definir como automática la transición de descarte al momento de inicializar el
 
 <p align="center">
     <img src="img/image15.png" alt="bloques">
-  </a>
+
   </p>
 
 
@@ -225,7 +224,7 @@ CPU y se las incorporan al modelo para mostrar la penalización detallada
 
 <p align="center">
     <img src="img/image16.png" alt="bloques">
-  </a>
+
   </p>
 
   ### Implementación
@@ -236,7 +235,7 @@ CPU y se las incorporan al modelo para mostrar la penalización detallada
 
 <p align="center">
     <img src="img/image17.png" alt="bloques">
-  </a>
+
   </p>
 
 2. Llamar a `resource_fire_net` en `sched_switch` para contemplar en la red los threads que pasan a ejecución en la CPU que le corresponda.
@@ -270,7 +269,7 @@ desde un principio resulta innecesario e ineficiente
 
 <p align="center">
     <img src="img/image18.png" alt="bloques">
-  </a>
+
   </p>
 
   #### Analogía entre Estados de hilos y Recursos
@@ -288,7 +287,7 @@ desde un principio resulta innecesario e ineficiente
 
 <p align="center">
     <img src="img/image19.png" alt="bloques">
-  </a>
+
   </p>
 
 
@@ -318,7 +317,7 @@ Supuesto de que los hilos pueden tener cierta afinidad con alguna CPU o grupo de
 
 <p align="center">
     <img src="img/image20.png" alt="bloques">
-  </a>
+
   </p>
 
 
@@ -344,7 +343,7 @@ Continuando el análisis, también se presentó otra cuestión. A la hora de sel
 
 <p align="center">
     <img src="img/image21.png" alt="bloques">
-  </a>
+
   </p>
 
   Los hilos presentes en la cola global son tenidos en cuenta al momento en que una CPU elige el próximo hilo a ejecutar. Esta transición, que ahora también se corresponderá a una transición de desencolado, tendrá como jerárquica del hilo a `RUNQ ⇒ RUNNING`.
@@ -370,7 +369,7 @@ Se procederá a adaptar el modelo de tal forma que pueda representar tanto el co
 
 <p align="center">
     <img src="img/image22.png" alt="bloques">
-  </a>
+
   </p>
 
 - Utilizar una **plaza global** para indicar que el sistema se encuentra en modo **monoprocesador (NO SMP)**.
@@ -390,7 +389,7 @@ Se procederá a adaptar el modelo de tal forma que pueda representar tanto el co
 
 <p align="center">
     <img src="img/image23.png" alt="bloques">
-  </a>
+
   </p>
 
 
@@ -398,7 +397,7 @@ Se procederá a adaptar el modelo de tal forma que pueda representar tanto el co
 
 <p align="center">
     <img src="img/image24.png" alt="bloques">
-  </a>
+
   </p>
 
 
@@ -407,11 +406,11 @@ Se procederá a adaptar el modelo de tal forma que pueda representar tanto el co
 
 <p align="center">
     <img src="img/image25.png" alt="bloques">
-  </a>
+
   </p>
 <p align="center">
     <img src="img/image26.png" alt="bloques">
-  </a>
+
   </p>
 
 
@@ -430,12 +429,12 @@ Representar la expulsión de un hilo de una determinada cola.   También se busc
 
 <p align="center">
     <img src="img/image27.png" alt="bloques">
-  </a>
+
   </p>
 
 <p align="center">
     <img src="img/image28.png" alt="bloques">
-  </a>
+
   </p>
 
   En el modelo del hilo se representa un nuevo cambio de estado para el hilo `RUNQ ⇒ CAN RUN`. La transición `T6` se ejecutará cada vez que un hilo deba ser expulsado de la cola en que se encuentra actualmente.
@@ -482,7 +481,7 @@ Para realizar la nueva conexión entre ambas redes, se va a tener que tanto las 
 
 <p align="center">
     <img src="img/image30.png" alt="bloques">
-  </a>
+
   </p>
 
   #### Análisis de resultados
@@ -505,7 +504,7 @@ Se buscará implementar el funcionamiento de los hilos de baja prioridad que pas
 
 <p align="center">
     <img src="img/image31.png" alt="bloques">
-  </a>
+
   </p>
 
   Habiendo llegado a este último modelo, se detalla el marcado inicial necesario para asegurar el correcto funcionamiento del *scheduler*, tanto en la red de hilos como en la red de recursos:
@@ -541,7 +540,7 @@ Finalmente, el comportamiento de los hilos de baja prioridad, que ocupan la CPU 
 
 <p align="center">
     <img src="img/image32.png" alt="bloques">
-  </a>
+
   </p>
 
 
@@ -559,7 +558,7 @@ Por otra parte, el agregado de los sistemas de control permitió corroborar en e
     <img src="img/image33.png" alt="bloques">
 <figcaption>Estados de 1 hilo</figcaption>
     </figure>
-  </a>
+
 </p>
 
 
@@ -568,7 +567,7 @@ Por otra parte, el agregado de los sistemas de control permitió corroborar en e
     <img src="img/image36.png" alt="bloques">
 <figcaption>Recursos de 1 solo CPU</figcaption>
     </figure>
-  </a>
+
 </p>
 
 | **Transición**         | **Descripción**                                                                 | **Condiciones/Acciones/Resultados**                                                      |
@@ -596,7 +595,7 @@ Por otra parte, el agregado de los sistemas de control permitió corroborar en e
     <img src="img/image34.png" alt="bloques">
   <figcaption>COMPLETO 4 CPU - Recursos</figcaption>
     </figure>
-  </a>
+
 </p>
 
 <p align="center">
@@ -604,7 +603,7 @@ Por otra parte, el agregado de los sistemas de control permitió corroborar en e
       <img src="img/image35.png" alt="bloques">
       <figcaption>Camino 1 solo CPU</figcaption>
     </figure>
-  </a>
+
 </p>
 
 
@@ -618,7 +617,7 @@ Las funciones principales del scheduler implementado son:
     <figure>
       <img src="img/image37.png" alt="bloques">
     </figure>
-  </a>
+
 </p>
 
 - **sched_choose**: se encarga de desencolar al hilo de mayor prioridad, fijándose tanto en la cola de la CPU actual como en la cola global.
@@ -627,7 +626,7 @@ Las funciones principales del scheduler implementado son:
     <figure>
       <img src="img/image38.png" alt="bloques">
     </figure>
-  </a>
+
 </p>
 
 
@@ -638,7 +637,7 @@ Las funciones principales del scheduler implementado son:
     <figure>
       <img src="img/image39.png" alt="bloques">
     </figure>
-  </a>
+
 </p>
 
 
@@ -648,7 +647,7 @@ Las funciones principales del scheduler implementado son:
     <figure>
       <img src="img/image40.png" alt="bloques">
     </figure>
-  </a>
+
 </p>
 
 - **sched_throw**: igual a `sched_switch`, con la diferencia de que no reubica en una cola al hilo saliente ya que el mismo ha finalizado su ejecución.
@@ -657,7 +656,7 @@ Las funciones principales del scheduler implementado son:
     <figure>
       <img src="img/image41.png" alt="bloques">
     </figure>
-  </a>
+
 </p>
 
 
@@ -731,7 +730,7 @@ Ambas funciones aseguran una correcta gestión de los hilos, manteniendo el esta
     <figure>
       <img src="img/image43.png" alt="bloques">
     </figure>
-  </a>
+
 </p>
 
 ## Elección de hilos (choose)
@@ -786,7 +785,7 @@ Esta función es fundamental para mantener el orden adecuado de los hilos en el 
     <figure>
       <img src="img/image44.png" alt="bloques">
     </figure>
-  </a>
+
 </p>
 
 
@@ -799,7 +798,7 @@ Para conectar las redes de hilos con la red de recursos de las CPU, se emplea el
     <figure>
       <img src="img/image45.png" alt="bloques">
     </figure>
-  </a>
+
 </p>
 
 
@@ -810,6 +809,12 @@ Para conectar las redes de hilos con la red de recursos de las CPU, se emplea el
 # 03-PI-Bonino-Daniele 🚀
 
 ## Primera iteración 📋
+
+<p align="center">
+    <figure>
+      <img src="img/image65.png" alt="bloques">
+    </figure>
+</p>
 
 
 ### Compilación del Kernel
@@ -867,14 +872,96 @@ Debido a esto, se decidió regresar al esquema original de selección de núcleo
 
 ## Segunda iteración 📋
 
-Solucionar el problema relacionado con el escenario donde el nuevo modelo de scheduler ignoraba la afinidad de los procesos a algún núcleo de la CPU.
+Solucionar el problema relacionado con el escenario donde el nuevo 
+modelo de scheduler ignoraba la afinidad de los procesos a algún 
+núcleo de la CPU.
 
+*COMPLICACIÓN*:  cada vez que se desea probar algún cambio se debe recompilar el
+kernel. Si este cambio produce un kernel panic, el sistema se debe reiniciar y el nuevo
+kernel queda inutilizable. Es por esto que se generó un kernel sano para utilizar cada
+vez que el sistema se rompa, y se *duplicó* la imagen de FreeBSD para levantar otra
+máquina virtual y poder depurar el kernel de manera online.
+
+### Implementación
+
+Se procedió a depurar el sistema para identificar la causa de los constantes *kernel panics* observados. Se determinó que los *kernel panics* ocurrían cuando el modelo original asignaba un hilo a la cola del último núcleo de la CPU en el que se había ejecutado. Sin embargo, el *scheduler* basado en la red de Petri detectaba que esa cola no estaba disponible y reasignaba el hilo a otra.
+
+Al profundizar en la investigación, se descubrió que el *scheduler* debe garantizar que un hilo *pinned* (cuando el sistema operativo asigna permanentemente un hilo a un núcleo particular, sin permitir su migración a otros núcleos) sea ejecutado exclusivamente en la misma CPU en la que se encontraba al momento de la llamada a `sched_pin`.
+
+Se comprendió que, en el caso de un hilo asociado a un núcleo específico de la CPU, se debe ignorar si la transición para encolar en dicho núcleo está sensibilizada. Para solucionar esto, se modificó la red de Petri agregando una nueva transición, *TRAN_ADDTOQUEUE_PINNED*. Esta nueva transición es similar a *TRAN_ADDTOQUEUE*, pero con la diferencia de que no está inhibida cuando hay otros hilos en la cola del núcleo.
+
+
+
+<p align="center">
+    <figure>
+      <img src="img/image66.png" alt="bloques">
+    </figure>
+</p>
+
+
+Se incorporaron los cambios al código relacionados con la definición de la red (matrices, números y nombres de transiciones en el archivo `petri_global_net.c`). Además, fue necesario modificar el archivo `sched_4bsd.c` para manejar el caso en que un hilo `td_pinned` pueda encolarse en la cola de su última CPU. La siguiente sección muestra la porción de código encargada de este propósito:
+
+
+<p align="center">
+    <figure>
+      <img src="img/image67.png" alt="bloques">
+    </figure>
+</p>
+
+## Tercera iteración 📋
+
+
+Abordar la implementación de un mecanismo de scheduling de
+procesos en un sistema monoprocesador multinúcleo mediante información recibida
+por metadata, con monitorización en tiempo real de la carga de cada uno de los
+núcleos de la CPU, implementando un mecanismo de conmutación dinámica del
+estado de actividad de cada núcleo controlado por el scheduler de corto plazo 4BSD
+modelado mediante la red de Petri resultante de la iteración anterior.
 
 
 
 ---
 
 # 04-PI-Cabrera 💫
+
+## Como es el kernel de freebsd?
+
+
+
+El kernel posee un diseño modular, lo que significa que se pueden cargar o descargar partes de él, convirtiéndose estas partes en sistemas activados o desactivados según sea necesario. Esto es muy útil porque existen multitud de hardware extraíbles, permitiendo cargar un módulo del kernel cuando se inserta un hardware, sin necesidad de tenerlo en memoria cuando no se usa. Además, no es necesario recompilar todo el kernel para añadir nuevas características o funcionalidades, ni reiniciar el sistema para aplicar estos cambios. Esta característica de modularidad no implica que el núcleo sea un **micro kernel**, ya que el kernel de Prime SD es **monolítico**, pero se le ha añadido la capacidad de cargar dinámicamente módulos, lo que permite comunicarse en tiempo de ejecución con el hardware, de forma similar a los servicios de un micro kernel, aunque los módulos se ejecutan en el espacio de memoria del kernel.
+
+<p align="center">
+    <figure>
+      <img src="img/image62.png" alt="bloques">
+    </figure>
+</p>
+
+La modularidad puede afectar el rendimiento del sistema, su comportamiento o la compatibilidad con el hardware, ya que hace que el núcleo ocupe menos espacio en memoria. También permite agregar nuevas funcionalidades y drivers para aumentar la compatibilidad con hardware diverso, sin necesidad de recompilar el kernel. Sin embargo, es posible que un kernel sea más rápido si los módulos se integran directamente en su código fuente y se recompilan.
+
+Los módulos que forman parte del sistema base de Prime SD están ubicados en el directorio `/boot/kernel/`, mientras que los módulos independientes o de terceros, como los instalados a través de los ports o paquetes, se encuentran en `/boot/modules/`. Generalmente, el archivo de un módulo lleva el nombre de la funcionalidad que contiene y tiene la extensión `.ko`. Por ejemplo, Prime SD requiere el módulo `wlan.ko` para manejar la capa de redes inalámbricas. Los módulos pueden cargarse y descargarse en tiempo de ejecución. Para cargar el módulo **ZFS**, se utiliza la herramienta `kldload` con el nombre del módulo o su ruta completa: `kldload /boot/kernel/wlan.ko`
+
+
+La herramienta `kldstat` permite mostrar los módulos cargados en el kernel, comenzando con el propio kernel, que siempre está en memoria, seguido de otros módulos.
+
+<p align="center">
+    <figure>
+      <img src="img/image63.png" alt="bloques">
+    </figure>
+</p>
+
+Además, `kldstat` muestra el ID del módulo, la dirección de memoria utilizada y el tamaño del módulo. Se puede usar `kldstat -h` para obtener una representación más legible del tamaño. Cada módulo cargado puede depender de otros módulos que deben estar previamente cargados para su correcto funcionamiento.
+
+
+
+
+
+
+
+
+
+
+
+
 
 ## Compilación del Kernel en FreeBSD
 
@@ -885,7 +972,7 @@ El kernel es la interfaz crucial entre el software y el hardware, permitiendo ap
     <figure>
       <img src="img/image46.png" alt="bloques">
     </figure>
-  </a>
+
 </p>
 
 
@@ -933,7 +1020,7 @@ Necesitamos el código fuente en el sistema.
     <figure>
       <img src="img/image47.png" alt="bloques">
     </figure>
-  </a>
+
 </p>
 
  **Consideraciones al Personalizar el Kernel en FreeBSD**
@@ -981,7 +1068,7 @@ freebsd-version -u
     <figure>
       <img src="img/image48.png" alt="bloques">
     </figure>
-  </a>
+
 </p>
 
 ### Instalación y actualización de FreeBSD
@@ -1228,3 +1315,22 @@ Otra cosa importante es guardar los archivos de configuración que hemos generad
     <img src="img/image61.png" alt="bloques">
   </figure>
 </p>
+
+
+### Recompilación rápida e instalación de kernel de FreeBSD
+
+Para llevar a cabo la recompilación rápida del kernel de FreeBSD, impactando solamente en aquellos módulos del sistema operativo que son alcanzados por los cambios, se recomienda ejecutar los siguientes comandos.
+
+
+
+Recompilacion rapida: `time make NO_KERNELCLEAN=yes NO_KERNELDEPEND=yes MODULES_WITH_WORLD=yes KERNCONF=KERNELCUSTOM01 KODIR=/boot/kernelcustom01 buildkernel installkernel`
+
+<p align="center">
+  <figure>
+    <img src="img/image64.png" alt="bloques">
+  </figure>
+</p>
+
+La compilación del kernel tomó 14.37 segundos en tiempo real. (ANTES 26 minutos y 0.64 segundos)
+
+
