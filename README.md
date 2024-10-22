@@ -1334,3 +1334,68 @@ Recompilacion rapida: `time make NO_KERNELCLEAN=yes NO_KERNELDEPEND=yes MODULES_
 La compilación del kernel tomó 14.37 segundos en tiempo real. (ANTES 26 minutos y 0.64 segundos)
 
 
+## Transferencia de Archivos entre FreeBSD (VM) y Ubuntu (NATIVO) utilizando SCP"
+
+
+1. **Configuración de la Máquina Virtual (FreeBSD)**
+   - Verifica la configuración de red de la máquina virtual. Utiliza un adaptador de red en modo "Puente" para permitir la comunicación con el host (Ubuntu).
+   <p align="center">
+  <figure>
+    <img src="img/image68.png" alt="bloques">
+  </figure>
+</p>
+
+2. **Instalación y Configuración del Servidor SSH en FreeBSD**
+   - Accede a FreeBSD a través de la terminal.
+   - Comprueba si el servicio SSH está instalado y habilitado. Ejecuta:
+     ```bash
+     sudo service sshd status
+     ```
+   - Si no está activo, puedes iniciarlo o reiniciarlo con:
+     ```bash
+     sudo service sshd start
+     ```
+
+3. **Verificación de la Dirección IP de FreeBSD**
+   - Ejecuta `ifconfig` en FreeBSD para obtener la dirección IP.
+   - Anota la dirección IP (por ejemplo, `192.168.0.212`).
+
+4. **Desactivar el Firewall (si es necesario)**
+   - Asegúrate de que no haya reglas de firewall que bloqueen el acceso. Puedes desactivar el firewall temporalmente si es necesario:
+     ```bash
+     sudo ufw disable
+     ```
+
+5. **Acceso a FreeBSD desde Ubuntu**
+   - En Ubuntu, abre una terminal y verifica que puedes hacer ping a la dirección IP de FreeBSD:
+     ```bash
+     ping 192.168.0.212
+     ```
+
+6. **Transferencia de Archivos usando SCP**
+   - En la terminal de Ubuntu, utiliza el comando `scp` para transferir el archivo desde tu escritorio a FreeBSD:
+     ```bash
+     scp ~/Escritorio/mensaje.txt root@192.168.0.212:/home/Augusto/
+     ```
+   - Introduce la contraseña de `root` cuando se te solicite.
+
+7. **Verificación de la Transferencia**
+   - Accede nuevamente a FreeBSD usando SSH:
+     ```bash
+     ssh root@192.168.0.212
+     ```
+   - Verifica que el archivo se haya transferido correctamente:
+     ```bash
+     ls /home/Augusto/
+     ```
+
+8. **Cierre de Sesión**
+   - Una vez verificado que el archivo está presente, puedes salir de la sesión SSH con el comando:
+     ```bash
+     exit
+     ```
+   <p align="center">
+  <figure>
+    <img src="img/image69.png" alt="bloques">
+  </figure>
+</p>
