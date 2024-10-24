@@ -1399,3 +1399,12 @@ La compilación del kernel tomó 14.37 segundos en tiempo real. (ANTES 26 minuto
     <img src="img/image69.png" alt="bloques">
   </figure>
 </p>
+
+## Procedimiento de trabajo
+
+
+  <p align="center">
+  <figure>
+    <img src="img/image70.png" alt="bloques">
+  </figure>
+</p>
