@@ -1408,3 +1408,25 @@ La compilación del kernel tomó 14.37 segundos en tiempo real. (ANTES 26 minuto
     <img src="img/image70.png" alt="bloques">
   </figure>
 </p>
+
+### Prueba Piloto
+
+### Pasos
+
+1. Crear copia de seguridad del kernel actual: `cp -a /boot/kernel /boot/kernel-14.1-RELEASE-GENERIC`
+
+2. Cambiar al directorio de configuración del kernel: `cd /usr/src/sys/amd64/conf`
+
+3. Copiar el archivo de configuración base: `cp GENERIC KERNELOPTIONS`
+
+4. Editar `KERNELOPTIONS` para agregar tus configuraciones personalizadas: `vi KERNELOPTIONS`
+
+5. Crear y editar `KERNELDEV01`, incluyendo `KERNELOPTIONS`: `vi KERNELDEV01` 
+En el archivo, añade: `include KERNELOPTIONS`
+
+6. Modificar archivos en el directorio `usr/` según las configuraciones deseadas.
+
+7. Compilar e instalar el nuevo kernel: `time make NO_KERNELCLEAN=yes NO_KERNELDEPEND=yes MODULES_WITH_WORLD=yes KERNCONF=KERNELDEV01 KODIR=/boot/kerneldev01 buildkernel installkernel`
+
+8. Configurar el próximo arranque con el nuevo kernel: `nextboot -k kerneldev01`
+
