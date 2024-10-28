@@ -344,6 +344,8 @@ mi_startup(void)
 	/*
 	 * Now hand over this thread to swapper.
 	 */
+	printf("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!.\n");
+
 	swapper();
 	/* NOTREACHED*/
 }

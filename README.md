@@ -1409,24 +1409,50 @@ La compilación del kernel tomó 14.37 segundos en tiempo real. (ANTES 26 minuto
   </figure>
 </p>
 
-### Prueba Piloto
+# Prueba Piloto
 
-### Pasos
+## Pasos
 
 1. Crear copia de seguridad del kernel actual: `cp -a /boot/kernel /boot/kernel-14.1-RELEASE-GENERIC`
 
+   <p align="center">
+     <figure>
+       <img src="img/image71.png" alt="bloques">
+     </figure>
+   </p>
+
 2. Cambiar al directorio de configuración del kernel: `cd /usr/src/sys/amd64/conf`
 
-3. Copiar el archivo de configuración base: `cp GENERIC KERNELOPTIONS`
+3. Copiar el archivo de configuración base: `cp GENERIC VMKERNEL4BSD`
 
-4. Editar `KERNELOPTIONS` para agregar tus configuraciones personalizadas: `vi KERNELOPTIONS`
+   <p align="center">
+     <figure>
+       <img src="img/image72.png" alt="bloques">
+     </figure>
+   </p>
 
-5. Crear y editar `KERNELDEV01`, incluyendo `KERNELOPTIONS`: `vi KERNELDEV01` 
-En el archivo, añade: `include KERNELOPTIONS`
+4. Editar `VMKERNEL4BSD` para agregar tus configuraciones personalizadas: `ee VMKERNEL4BSD`
 
-6. Modificar archivos en el directorio `usr/` según las configuraciones deseadas.
+5. Compilar el nuevo kernel: `make -j4 buildkernel KERNCONF=VMKERNEL4BSD`
 
-7. Compilar e instalar el nuevo kernel: `time make NO_KERNELCLEAN=yes NO_KERNELDEPEND=yes MODULES_WITH_WORLD=yes KERNCONF=KERNELDEV01 KODIR=/boot/kerneldev01 buildkernel installkernel`
+6. Instalar el nuevo kernel: `make installkernel KERNCONF=VMKERNEL4BSD`
 
-8. Configurar el próximo arranque con el nuevo kernel: `nextboot -k kerneldev01`
+7. Las modificaciones desde Ubuntu (host) se pueden hacer e intercambiar hacia FreeBSD VM con el comando: `rsync -avz -e ssh /home/augusto/Escritorio/PI_Cabrera/Notas_PI/code/releng14.1/sys/ root@192.168.x.xx:/usr/src/sys/`
 
+8. Reiniciar el sistema: `reboot`
+
+Para verificar si el kernel se cargó correctamente, se agregó el siguiente **print** en el código `init_main`:
+
+<p align="center">
+  <figure>
+    <img src="img/image74.png" alt="bloques">
+  </figure>
+</p>
+
+<p align="center">
+  <figure>
+    <img src="img/image75.png" alt="bloques">
+  </figure>
+</p>
+
+Se observa que al bootear aparece el mensaje de verificación. ¡El kernel `VMKERNEL4BSD` se instaló correctamente!
