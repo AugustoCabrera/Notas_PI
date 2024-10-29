@@ -1456,3 +1456,21 @@ Para verificar si el kernel se cargó correctamente, se agregó el siguiente **p
 </p>
 
 Se observa que al bootear aparece el mensaje de verificación. ¡El kernel `VMKERNEL4BSD` se instaló correctamente!
+
+## Primera iteración
+
+Habiendo mencionado la colaboración con trabajos desarrollados por otros autores, se debe tener en cuenta que los archivos pertinentes del sistema operativo FreeBSD han sufrido cambios a la fecha, por lo que el código fuente de estos trabajos debe ser actualizado a la versión del sistema operativo que se va a utilizar para este proyecto en esta iteración (versión 14.1). Es por esto que el objetivo de esta primera iteración es la adaptación de los trabajos referenciados a la versión más reciente de FreeBSD a la fecha.
+
+Los archivos de interés a modificar/agregar son:
+- `/usr/src/sys/amd64/conf/VMKERNEL4BSD`
+- `/usr/src/sys/conf/files`
+- `/usr/src/sys/kern/`
+  - `init_main.c (PRINT)`
+  - `sched_4bsd.c`
+  - `kern_exec`
+  - `imgact_elf.c`
+  - `kern_thread.c`
+  - `metadata_elf_reader.c`
+  - `petri_global_net.c`
+  - `sched_petri.c`
+  
