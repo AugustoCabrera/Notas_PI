@@ -5233,3 +5233,70 @@ xdr/xdr_mbuf.c			optional xdr | krpc | nfslockd | nfscl | nfsd
 xdr/xdr_mem.c			optional xdr | krpc | nfslockd | nfscl | nfsd
 xdr/xdr_reference.c		optional xdr | krpc | nfslockd | nfscl | nfsd
 xdr/xdr_sizeof.c		optional xdr | krpc | nfslockd | nfscl | nfsd
+
+
+#AGREGADOS
+
+contrib/openzfs/module/zfs/ddt_stats.c                optional zfs compile-with "${ZFS_C}"
+
+dev/clk/clk.c                        optional clk
+dev/clk/clkdev_if.m                optional clk
+dev/clk/clknode_if.m                optional clk
+dev/clk/clk_bus.c                optional clk fdt
+dev/clk/clk_div.c                optional clk
+dev/clk/clk_fixed.c                optional clk
+dev/clk/clk_gate.c                optional clk
+dev/clk/clk_link.c                optional clk
+dev/clk/clk_mux.c                optional clk
+
+dev/dwc/if_dwc.c                optional dwc fdt
+dev/dwc/if_dwc_if.m                optional dwc fdt
+dev/dwc/dwc1000_core.c                optional dwc fdt
+dev/dwc/dwc1000_dma.c                optional dwc fdt
+
+dev/hwreset/hwreset.c                optional hwreset
+dev/hwreset/hwreset_array.c        optional hwreset
+dev/hwreset/hwreset_if.m        optional hwreset
+
+dev/mmc/host/dwmmc.c                optional dwmmc fdt
+
+dev/nvmem/nvmem.c                optional nvmem fdt
+dev/nvmem/nvmem_if.m                optional nvmem
+
+dev/phy/phy.c                        optional phy
+dev/phy/phydev_if.m                optional phy fdt
+dev/phy/phynode_if.m                optional phy
+dev/phy/phy_usb.c                optional phy
+dev/phy/phynode_usb_if.m        optional phy
+
+dev/regulator/regdev_if.m        optional regulator fdt
+dev/regulator/regnode_if.m        optional regulator
+dev/regulator/regulator.c        optional regulator
+dev/regulator/regulator_bus.c        optional regulator fdt
+dev/regulator/regulator_fixed.c        optional regulator
+
+#dev/sound/clone.c                optional sound
+
+
+dev/syscon/syscon.c                optional syscon
+dev/syscon/syscon_generic.c        optional syscon fdt
+dev/syscon/syscon_if.m                optional syscon
+dev/syscon/syscon_power.c        optional syscon syscon_power
+
+#	kern/petri_global_net.c standard
+#	kern/sched_petri.c      standard
+#	kern/metadata_elf_reader.c        standard
+
+netinet/tcp_stacks/rack_pcm.c        optional inet tcphpts tcp_rack | inet6 tcphpts tcp_rack
+
+netpfil/pf/pf_nl.c                optional pf inet
+
+netpfil/pf/pflow.c                optional pflow pf inet
+
+security/mac_grantbylabel/mac_grantbylabel.c                optional mac_grantbylabel
+
+stats/cpu_stats.c                        optional sched_stats
+stats/modlib.c                                optional sched_stats
+stats/thread_stats.c                optional sched_stats
+stats/toggle_active_cpu.c        optional sched_stats
+

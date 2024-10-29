@@ -1457,6 +1457,17 @@ Para verificar si el kernel se cargó correctamente, se agregó el siguiente **p
 
 Se observa que al bootear aparece el mensaje de verificación. ¡El kernel `VMKERNEL4BSD` se instaló correctamente!
 
+**NOTA**: En caso de que se borre `/usr/src`, se pueden copiar los archivos de respaldo con:
+
+```bash
+
+cd /home/Augusto/usr_src_backup  
+sudo mv * /usr/src  
+```
+
+Esto ayuda a evitar tiempos largos de `git clone`.
+
+
 ## Primera iteración
 
 Habiendo mencionado la colaboración con trabajos desarrollados por otros autores, se debe tener en cuenta que los archivos pertinentes del sistema operativo FreeBSD han sufrido cambios a la fecha, por lo que el código fuente de estos trabajos debe ser actualizado a la versión del sistema operativo que se va a utilizar para este proyecto en esta iteración (versión 14.1). Es por esto que el objetivo de esta primera iteración es la adaptación de los trabajos referenciados a la versión más reciente de FreeBSD a la fecha.
