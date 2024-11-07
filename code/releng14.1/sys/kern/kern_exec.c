@@ -72,6 +72,13 @@
 #include <sys/umtxvar.h>
 #include <sys/vnode.h>
 #include <sys/wait.h>
+
+//
+#include <sys/syslog.h>
+MALLOC_DECLARE(M_AUDITTEXT_ARGS);
+MALLOC_DEFINE( M_AUDITTEXT_ARGS, "audittext_args", "Memory for copy args and print them" );
+//
+
 #ifdef KTRACE
 #include <sys/ktrace.h>
 #endif

@@ -31,6 +31,8 @@
 #include "opt_witness.h"
 #include "opt_hwpmc_hooks.h"
 
+#include <sys/cdefs.h>
+#include <sys/param.h>
 #include <sys/systm.h>
 #include <sys/kernel.h>
 #include <sys/lock.h>
@@ -43,6 +45,7 @@
 #include <sys/resourcevar.h>
 #include <sys/sdt.h>
 #include <sys/smp.h>
+#include <sys/sched_petri.h>
 #include <sys/sched.h>
 #include <sys/sleepqueue.h>
 #include <sys/selinfo.h>
@@ -95,9 +98,9 @@ _Static_assert(offsetof(struct proc, p_pid) == 0xc4,
     "struct proc KBI p_pid");
 _Static_assert(offsetof(struct proc, p_filemon) == 0x3c8,
     "struct proc KBI p_filemon");
-_Static_assert(offsetof(struct proc, p_comm) == 0x3e0,
+_Static_assert(offsetof(struct proc, p_comm) == 0x3f8,
     "struct proc KBI p_comm");
-_Static_assert(offsetof(struct proc, p_emuldata) == 0x4d0,
+_Static_assert(offsetof(struct proc, p_emuldata) == 0x4e8,
     "struct proc KBI p_emuldata");
 #endif
 #ifdef __i386__
@@ -800,6 +803,7 @@ thread_alloc(int pages)
 	kmsan_thread_alloc(td);
 	cpu_thread_alloc(td);
 	EVENTHANDLER_DIRECT_INVOKE(thread_ctor, td);
+	init_petri_thread(td);
 	return (td);
 }
 
@@ -1249,7 +1253,7 @@ thread_single(struct proc *p, int mode)
 		}
 		if ((p->p_flag & (P_STOPPED_SIG | P_TRACED)) != 0 ||
 		    (p->p_flag2 & P2_WEXIT) != 0)
-			return (1);
+			return (1);       // VEEEEEEEEEEEEEEERRRRRRR
 	} else if ((p->p_flag & P_HADTHREADS) == 0)
 		return (0);
 	if (p->p_singlethread != NULL && p->p_singlethread != td)
