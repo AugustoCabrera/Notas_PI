@@ -919,6 +919,25 @@ estado de actividad de cada núcleo controlado por el scheduler de corto plazo 4
 modelado mediante la red de Petri resultante de la iteración anterior.
 
 
+En FreeBSD es posible obtener estadísticas detalladas sobre el uso de los
+núcleos de la CPU desglosadas para los distintos modos de ejecución de los procesos.
+Estos modos incluyen USER (usuario), SYS (sistema), INTR (interrupciones), NICE
+(prioridad ajustada) y IDLE (inactividad). Estas métricas proporcionan una visión integral del rendimiento del sistema, permitiendo un análisis preciso de cómo se
+distribuye la carga de trabajo entre los diferentes modos de ejecución, lo que resulta
+fundamental para optimizar el desempeño y la eficiencia del sistema. Como primer
+acercamiento, optamos por medir la carga causada por los procesos de usuario.
+
+Se comenzó con un módulo de kernel básico para introducirse en el desarrollo
+de los mismos, y de a poco se le incorporaron utilidades hasta dividirlo en 2 módulos
+separados con tareas bien diferenciadas: uno para la recopilación de estadísticas
+referidas exclusivamente a cada núcleo de la CPU (`cpu_stats.c`) y el otro para la
+recopilación de estadísticas de los hilos y procesos (`thread_stats.c`). Cada uno de
+estos módulos posee un archivo makefile para su compilación y para ofrecer una fácil
+carga y descarga de los mismos en el kernel del sistema operativo.
+
+
+
+
 
 ---
 
@@ -1485,3 +1504,22 @@ Los archivos de interés a modificar/agregar son:
   - `petri_global_net.c`
   - `sched_petri.c`
   
+CONSIDERACIONES:  Se agrego la carpeta `kernel_modules` que incorpora los modulos de kernel: 
+
+
+<p align="center">
+  <figure>
+    <img src="img/image76.png" alt="bloques">
+  </figure>
+</p>
+
+Para cargar estos modulos se utilizaron los siguientes comandos:
+
+
+
+```bash
+cd kernel_modules
+make
+./load_all.sh
+```
+[Ver interacción 3 Daniele-Bonino](#tercera-iteración-)
