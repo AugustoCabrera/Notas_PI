@@ -935,9 +935,135 @@ recopilación de estadísticas de los hilos y procesos (`thread_stats.c`). Cada 
 estos módulos posee un archivo makefile para su compilación y para ofrecer una fácil
 carga y descarga de los mismos en el kernel del sistema operativo.
 
+Si bien los archivos de log eran muy completos y útiles, su tamaño crecía
+rápidamente al tener tanto detalle y esto no sólo consumía más tiempo de cálculo
+para los porcentajes y segundos y la escritura, sino que además dificultaba la
+búsqueda de información dentro del archivo a nivel de kernel, por lo que se decidió
+darle un nuevo formato menos verboso, reducido en cuanto a preservación de las
+estadísticas en formato de ticks únicamente, pero que igualmente sea intuitivo.
+
+<p align="center">
+    <figure>
+      <img src="img/image77.png" alt="bloques">
+    </figure>
+</p>
 
 
 
+En la salida de comandos como `top`, los términos **nice**, **system**, **idle** e **interrupt** indican diferentes categorías de uso del procesador (CPU). Aquí está la descripción de cada uno:
+
+1. **User (user mode)**
+   - Tiempo que la CPU dedica a ejecutar procesos en modo usuario (no privilegiado).
+   - Incluye aplicaciones y procesos normales que no requieren acceso al hardware o funciones del núcleo del sistema operativo.
+
+2. **Nice**
+   - Tiempo que la CPU dedica a procesos en modo usuario que tienen un valor de *nice* (prioridad baja).
+   - El valor *nice* ajusta la prioridad de los procesos:
+     - Procesos con prioridad baja (*nice* alto) consumirán menos CPU.
+     - Procesos con prioridad estándar tienen *nice* igual a 0.
+
+3. **System (system mode)**
+   - Tiempo que la CPU dedica a ejecutar procesos en modo kernel.
+   - Incluye tareas que requieren acceso al núcleo del sistema operativo, como:
+     - Controladores de dispositivos.
+     - Llamadas al sistema.
+
+4. **Interrupt**
+   - Tiempo que la CPU pasa manejando interrupciones de hardware.
+   - Las interrupciones son señales del hardware que requieren atención inmediata del procesador, por ejemplo:
+     - Un dispositivo solicitando servicio o datos.
+
+5. **Idle**
+   - Tiempo que la CPU permanece inactiva porque no hay procesos que necesiten ejecución.
+   - Una CPU al 100% en *idle* indica que no hay trabajo pendiente.
+
+
+
+Hubo que adoptar también un criterio para clasificar la carga del sistema.
+Para esto se partió de mediciones sin ninguna carga adicional, obteniendo unas
+estadísticas de un 75% para procesos IDLE y un 25% para procesos SYS. se decidió escalar en la carga del sistema con
+procesos USER mediante el comando de pruebas stress para simular procesos de
+carga intensiva, y un script custom que lance procesos sencillos que simulen carga en
+la CPU:
+
+<p align="center">
+    <figure>
+      <img src="img/image78.png" alt="bloques">
+    </figure>
+</p>
+
+Con estas estadísticas tenidas en cuenta, tomamos la siguiente escala de
+referencia para identificar la intensidad del consumo de recursos de la CPU en el
+sistema:
+
+<p align="center">
+    <figure>
+      <img src="img/image80.png" alt="bloques">
+    </figure>
+</p>
+
+
+## Cuarta iteración 📋
+
+El proyecto **Optimización del planificador a corto plazo con redes de Petri**
+aporta dos funcionalidades al kernel: la capacidad de encender/apagar los núcleos de
+la CPU del sistema, y la posibilidad de que un hilo pueda monopolizar un núcleo de la
+CPU, sirviéndose del modelo de scheduler con red de Petri trabajado hasta el
+momento.
+
+### Implementación 
+
+Para comenzar a incorporar el módulo de encendido/apagado de núcleos, se
+agregaron las plazas y transiciones correspondientes a la red:
+
+<p align="center">
+    <figure>
+      <img src="img/image81.png" alt="bloques">
+    </figure>
+</p>
+
+Se hizo un pequeño módulo que llama a la función toggle_active_cpu, la cual conmuta
+el estado de actividad del núcleo de la CPU que se le indique (exceptuando el núcleo
+0) y se pudo ver cómo efectivamente los núcleos dejan de tener carga de procesos al
+deshabilitarlos hasta que se los reincorpora.
+
+El módulo revisado presentó un problema en la transición THROW, encargada de equilibrar el encolado de hilos en núcleos mediante un algoritmo round-robin. En un sistema de cuatro núcleos, esta transición asegura que un núcleo no pueda encolar más hilos hasta que los demás también lo hagan, disparándose al retirar tokens que inhiben el encolado.
+
+Sin embargo, se detectó que un núcleo en estado SUSPENDED no agrega tokens en la plaza necesaria para disparar THROW, lo que bloquea el sistema, ya que ningún núcleo puede encolar hilos. Para resolverlo, se implementó una estructura OR en la red, permitiendo que THROW se dispare cuando todos los núcleos hayan encolado hilos o estén en estado SUSPENDED.
+
+<p align="center">
+    <figure>
+      <img src="img/image82.png" alt="bloques">
+    </figure>
+</p>
+
+Al disparar **TRAN_SUSPEND_PROC**, se activa automáticamente **TRAN_SUSPENDED_PROC**, llenando las plazas **PLACE_SUSPENDED** (indicando el estado suspendido) y **PLACE_QUEUED_OR_SUSP** (habilitando el equilibrado de **THROW**). Esto permite que **THROW** recupere su función, equilibrando el encolado incluso con núcleos suspendidos.
+
+#### Cambios realizados en el código
+1. **Actualización de matrices de incidencia e inhibición.**
+2. **Incorporación de nuevas transiciones automáticas** para manejar núcleos encolados o suspendidos.
+3. Ajustes en **toggle_active_cpu** para validar el modo SMP y evitar *kernel panics*.
+4. Inclusión de funciones **turn_on_cpu** y **turn_off_cpu** para mayor control del estado de los núcleos.
+
+#### Modificaciones en el módulo de monopolización de CPU
+- Se cambió la lógica para que **procesos (y sus hilos)** adquieran núcleos, en lugar de hilos individuales, utilizando la metadata de procesos.
+- Se añadieron las funciones:
+  - **monopolize_cpu**: Wrapper de **toggle_pin_cpu_to_proc**.
+  - **release_cpu**: Wrapper de **toggle_pin_cpu_to_proc**.
+- Ajustes realizados en los archivos relacionados:
+  - `sched_4bsd.c`
+  - `sched_petri.c`
+  - `sched_petri.h`
+  - `petri_global_net.c`
+
+
+
+## Octava iteración 📋
+
+El proyecto Comunicación desde espacio de usuario a espacio de kernel
+mediante metadatos en archivos ELF permite a los procesos darle información sobre
+ellos al kernel. Esto se logra a través de la inserción de metadata en sus ejecutables
+mediante el uso de plugins desarrollados para GCC y CLang.
 
 ---
 
@@ -1523,3 +1649,51 @@ make
 ./load_all.sh
 ```
 [Ver interacción 3 Daniele-Bonino](#tercera-iteración-)
+
+NOTA: Modificar el /etc/syslog.conf para que imprima los log. (agregar local1.*    /var/log/local1.log)
+
+### Pruebas con CORES
+
+<p align="center">
+  <figure>
+    <img src="img/image83.png" alt="bloques">
+  </figure>
+</p>
+
+<p align="center">
+  <figure>
+    <img src="img/image84.png" alt="bloques">
+  </figure>
+</p>
+
+
+
+
+El resultado indica que solo hay 1 CPU lógico asignado a tu máquina virtual. Esto puede deberse a cómo se configuró la VM en el hipervisor (como VirtualBox, VMware, o KVM). Para aumentar el número de núcleos disponibles para FreeBSD, sigue estos pasos:
+
+1. Apaga la máquina virtual.
+2. Ve a la configuración de la VM.
+3. Navega a la sección Sistema > Procesador.
+4. Ajusta el control deslizante para aumentar el número de CPUs asignadas.
+
+<p align="center">
+  <figure>
+    <img src="img/image85.png" alt="bloques">
+  </figure>
+</p>
+
+
+<p align="center">
+  <figure>
+    <img src="img/image86.png" alt="bloques">
+  </figure>
+</p>
+
+Ahora muestra que tienes 4 CPUs asignadas a la VM de FreeBSD. Esto significa que ajustaste correctamente la configuración del número de procesadores en VirtualBox y FreeBSD ahora los reconoce.
+
+<p align="center">
+  <figure>
+    <img src="img/image87.png" alt="bloques">
+  </figure>
+</p>
+
