@@ -1056,6 +1056,194 @@ Al disparar **TRAN_SUSPEND_PROC**, se activa automáticamente **TRAN_SUSPENDED_P
   - `sched_petri.h`
   - `petri_global_net.c`
 
+## Quinta iteración 📋
+
+Procesamiento de las estadísticas obtenidas y la toma de decisiones en base a las mismas teniendo correctamente
+adaptado el módulo que controla el cambio de estado de actividad de los núcleos de la CPU.
+
+Se procedió a parsear los strings y obtener los datos de interés para poder empezar a hacer cálculos que nos ayuden en la toma de decisiones.
+
+Para poder medir la carga del sistema y las necesidades de los procesos para manejar el estado de actividad de los núcleos, fue necesario obtener lo siguiente:
+
+
+#### 1. Carga de Usuario del Sistema
+Se utiliza la métrica de "ticks" para medir el tiempo que cada núcleo pasa ejecutando procesos de usuario. En FreeBSD, esta información se puede extraer con `sysctl`.
+
+**Ejemplo:**
+Supongamos que cada núcleo registra ticks en intervalos de tiempo *(Un tick es una unidad básica de tiempo utilizada por el sistema operativo para medir intervalos de actividad en la CPU. Representa un "pulso" del temporizador del sistema)*. En un sistema con 4 núcleos:
+- **Núcleo 0:** 500 ticks.
+- **Núcleo 1:** 1500 ticks.
+- **Núcleo 2:** 700 ticks.
+- **Núcleo 3:** 200 ticks.
+
+El núcleo 1 tiene la mayor carga de usuario (1500 ticks), mientras que el núcleo 3 es el menos cargado (200 ticks). Esto puede indicar que el núcleo 3 está menos ocupado con procesos de usuario.
+
+
+
+#### 2. Necesidades de Cada Proceso
+Los procesos pueden incluir metadata en sus ejecutables para especificar requisitos de CPU. Por ejemplo, una aplicación en tiempo real puede necesitar un núcleo reservado para garantizar que siempre tenga recursos disponibles.
+
+**Ejemplo:**
+Un sistema tiene dos procesos:
+- **Proceso A:** Metadata: `"CPU=HighPriority"`.  
+  Este proceso indica que necesita prioridad alta y se ejecutará en un núcleo que no esté compartido.  
+- **Proceso B:** Metadata: `"CPU=LowPriority"`.  
+  Este proceso puede ejecutarse en cualquier núcleo disponible.  
+
+El sistema asigna el núcleo 0 exclusivamente al Proceso A y permite que el Proceso B comparta el núcleo 1 con otros procesos menos críticos.
+
+**¿Ventajas de esto?**
+
+
+La configuración en la que el Proceso A se ejecuta en un núcleo dedicado (no compartido) debido a su alta prioridad tiene varias ventajas, especialmente en escenarios donde la predictibilidad, el rendimiento y la latencia son críticos. A continuación, te explico las principales ventajas:
+
+| **Ventaja**                                 | **Descripción**                                                                                     | **Escenario de Uso**                                            |
+|---------------------------------------------|-----------------------------------------------------------------------------------------------------|-----------------------------------------------------------------|
+| **Baja latencia y alta predictibilidad**    | Acceso exclusivo al núcleo, sin interrupciones por cambios de contexto.                            | Sistemas en tiempo real, multimedia.                           |
+| **Máximo rendimiento del núcleo**           | Aprovecha todo el poder del núcleo sin competencia por recursos.                                   | Simulaciones, procesamiento de imágenes, machine learning.     |
+| **Reducción de overhead de cambios de contexto** | Minimiza la pérdida de tiempo causada por alternar entre procesos.                                | Servidores de bases de datos, streaming de datos.              |
+| **Mayor consistencia en el rendimiento**    | Métricas de rendimiento predecibles y constantes.                                                  | Redes críticas, sistemas financieros.                          |
+| **Evita interferencias por contención de recursos** | Elimina competencia por caché y otros recursos compartidos.                                       | Algoritmos intensivos en datos, procesamiento en caché.         |
+| **Mejora en aplicaciones sensibles al tiempo** | Garantiza cumplimiento de restricciones de tiempo crítico.                                         | Robótica, conducción autónoma, sistemas embebidos.             |
+
+
+
+
+#### 3. Núcleo Más Ocioso
+Determinar el núcleo más ocioso implica analizar los ticks y otras métricas para identificar cuál está realizando menos trabajo. Esto es útil para tomar decisiones de apagado dinámico.
+
+**Ejemplo:**
+En un sistema con 4 núcleos, los ticks (tiempo en diferentes modos) podrían verse así:
+- **Núcleo 0:** 1000 ticks de usuario, 500 ticks de sistema.
+- **Núcleo 1:** 1500 ticks de usuario, 700 ticks de sistema.
+- **Núcleo 2:** 200 ticks de usuario, 100 ticks de sistema.
+- **Núcleo 3:** 800 ticks de usuario, 400 ticks de sistema.
+
+El núcleo 2 tiene la menor actividad general (200 ticks de usuario y 100 ticks de sistema). Basado en esta información, el módulo decide apagar el núcleo 2 para ahorrar energía.
+
+
+
+#### Conclusión
+Estos ejemplos ilustran cómo cada métrica contribuye a la toma de decisiones:
+1. **Carga de usuario del sistema** ayuda a identificar el trabajo actual en cada núcleo.  
+2. **Necesidades de cada proceso** permite priorizar recursos según las demandas específicas.  
+3. **Núcleo más ocioso** es clave para optimizar el uso de energía y liberar recursos.  
+
+### Implementación
+
+#### **Callback_load**
+Función principal llamada cada 30 segundos para gestionar la carga del sistema y el estado de los núcleos.
+
+##### **Pasos principales:**
+1. **Obtención de estadísticas:** Se recopilan datos de los módulos `cpu_stats` y `thread_stats`.
+
+2. **Gestión de carga:**
+   - Si el nivel de carga es **menor a LOAD_NORMAL** (LOAD_IDLE o LOAD_LOW):
+     - Identificar el núcleo más ocioso (calculando ticks en modo IDLE).
+     - Apagarlo, con las siguientes consideraciones:
+       - **Delay de acción:** Garantiza consistencia para evitar apagar núcleos por error.
+       - **Procesos monopolizadores:** Si existen, no se pueden suspender núcleos.
+       - **Límite de núcleos apagados:** Previene que el sistema quede inutilizable por falta de recursos.
+
+   - Si el nivel de carga es **mayor o igual a LOAD_NORMAL**:
+     - Encender cualquier núcleo apagado previamente.
+     - Reducir el tiempo de chequeo de carga para reaccionar más rápido a necesidades futuras.
+
+3. **Cálculo de métricas:**
+   - **Carga de usuario:** 
+     - Calcular el porcentaje de uso de cada núcleo.
+     - Promediar para asignar uno de los niveles: LOAD_IDLE, LOAD_LOW, LOAD_NORMAL, LOAD_HIGH, LOAD_INTENSE o LOAD_SEVERE.
+   - **Necesidades de los procesos:**
+     - Usar etiquetas de procesos (`LOWPERF`, `STANDARD`, `HIGHPERF`, `CRITICAL`) y un sistema de puntuación (0 a 100).
+     - Asignar uno de los niveles de carga basados en el puntaje.
+
+4. **Toma de decisiones:**
+   - Se da **mayor peso a la carga de usuario** (realidad actual de los núcleos) sobre las necesidades de los procesos (requerimientos teóricos) para encendido o apagado de núcleos.
+
+
+
+#### **Callback_monopolization**
+Función principal llamada cada segundo para gestionar el monopolio de núcleos.
+
+##### **Pasos principales:**
+1. **Obtención de información:** Consultar el módulo encargado de recopilar datos sobre monopolización de núcleos.
+
+2. **Estado de monopolización:** Consultar la red de Petri para determinar el estado actual de los núcleos monopolizados.
+
+3. **Liberación de núcleos:**
+   - Verificar si los núcleos monopolizados deben liberarse por:
+     - No ser requeridos.
+     - Existencia de un proceso prioritario que necesita monopolizar.
+
+4. **Asignación de núcleos:**
+   - Asignar núcleos disponibles a procesos prioritarios.
+   - **Límite de núcleos monopolizables:** Controla cuántos núcleos pueden ser dedicados exclusivamente.
+
+
+
+### **Conclusión**
+El diseño modular y basado en callbacks permite un equilibrio dinámico entre eficiencia energética y rendimiento. Los mecanismos de delay, prioridades y límites aseguran estabilidad en las decisiones tomadas.
+
+
+#### **Niveles de carga (LOAD)**
+
+ Los niveles de carga (**LOAD_IDLE**, **LOAD_LOW**, etc.) se calculan generalmente para cada núcleo (**core**) del procesador. Esto permite tomar decisiones específicas sobre el estado de cada núcleo, como apagar, encender, o asignar procesos, dependiendo de su nivel de actividad y las necesidades del sistema. También es posible calcular un nivel general del sistema como promedio o agregado de todos los núcleos para decisiones globales.
+
+
+| **Nivel de Carga**   | **Descripción**                                                                 |
+|-----------------------|---------------------------------------------------------------------------------|
+| **LOAD_IDLE**         | El sistema está prácticamente inactivo. Los núcleos están en su mayoría en estado `IDLE`. |
+| **LOAD_LOW**          | Baja carga. Hay algo de actividad, pero no representa un uso significativo del sistema. |
+| **LOAD_NORMAL**       | Carga moderada. El sistema está en un estado típico de funcionamiento.         |
+| **LOAD_HIGH**         | Alta carga. Los núcleos están ocupados con procesos demandantes.               |
+| **LOAD_INTENSE**      | Carga intensa. Los núcleos están cerca de su capacidad máxima de procesamiento. |
+| **LOAD_SEVERE**       | Sobrecarga. El sistema está saturado, lo que podría afectar el rendimiento.    |
+
+
+
+#### **¿Qué es la Monopolización de Núcleos?**
+
+Se refiere a la asignación exclusiva de un núcleo a un proceso específico. Esto implica que un núcleo es dedicado exclusivamente a un proceso, sin compartir su capacidad de procesamiento con otros procesos en el sistema. 
+
+
+
+##### **Detalles sobre la Monopolización:**
+
+1. **Uso exclusivo:**
+   - Cuando un proceso monopoliza un núcleo, tiene acceso total a sus recursos de procesamiento.
+   - Otros procesos no pueden ser programados en ese núcleo mientras dure la monopolización.
+
+2. **Propósitos:**
+   - **Procesos de alta prioridad:** Procesos críticos o de tiempo real pueden necesitar un núcleo dedicado para garantizar que cumplan con sus requisitos de desempeño.
+   - **Reducción de latencia:** Evita interrupciones por la planificación de otros procesos, mejorando el tiempo de respuesta.
+
+3. **Control:**
+   - El sistema operativo evalúa las condiciones para permitir la monopolización, como la carga general del sistema y las prioridades de otros procesos.
+   - Si otro proceso de mayor prioridad requiere un núcleo, la monopolización puede revocarse.
+
+4. **Limitaciones:**
+   - La cantidad de núcleos que pueden ser monopolizados generalmente está limitada para evitar un uso ineficiente de los recursos del sistema.
+   - El sistema operativo debe equilibrar el rendimiento general con las necesidades de los procesos individuales.
+
+
+
+### **Ejemplo práctico:**
+Un proceso de renderizado de gráficos en tiempo real puede monopolizar un núcleo para evitar retrasos debido a interrupciones causadas por procesos de menor prioridad. Durante este tiempo:
+- El núcleo trabaja exclusivamente para este proceso.
+- Otros procesos son reasignados a núcleos disponibles.
+
+### RESULTADOS
+
+
+Se logró un primer acercamiento a la gestión de núcleos en base a estadísticas
+en tiempo real del sistema e información proporcionada por los procesos sobre sus
+necesidades.
+
+NOTA: `dmesg`: Muestra los mensajes del kernel del sistema, que incluyen información sobre el arranque del sistema, los controladores, dispositivos y otros eventos relevantes.
+
+
+
+
 
 
 ## Octava iteración 📋
@@ -1582,7 +1770,8 @@ La compilación del kernel tomó 14.37 segundos en tiempo real. (ANTES 26 minuto
 
 6. Instalar el nuevo kernel: `make installkernel KERNCONF=VMKERNEL4BSD`
 
-7. Las modificaciones desde Ubuntu (host) se pueden hacer e intercambiar hacia FreeBSD VM con el comando: `rsync -avz -e ssh /home/augusto/Escritorio/PI_Cabrera/Notas_PI/code/releng14.1/sys/ root@192.168.x.xx:/usr/src/sys/`
+7. Las modificaciones desde Ubuntu (host) se pueden hacer e intercambiar hacia FreeBSD VM con el comando: `rsync -avz -e ssh /home/augusto/Escritorio/PI_Cabrera/Notas_PI/code/releng14.1/sys/ root@192.168.0.212:/usr/src/sys/
+`
 
 8. Reiniciar el sistema: `reboot`
 
@@ -1650,7 +1839,28 @@ make
 ```
 [Ver interacción 3 Daniele-Bonino](#tercera-iteración-)
 
-NOTA: Modificar el /etc/syslog.conf para que imprima los log. (agregar local1.*    /var/log/local1.log)
+NOTA: Modificar el /etc/syslog.conf para que imprima los log. (agregar local1.*    /var/log/local1.log y tambien local2.*    /var/log/local2.log
+), *usar service syslogd restart* 
+
+En local1.log se guardar las impresiones de cup_stats.ko
+
+La diferencia entre LOG_LOCAL1 y LOG_LOCAL2 radica en que son identificadores diferentes para categorizar los mensajes de log. Ambos usan el nivel LOG_INFO (informativo), pero los identificadores locales permiten organizar los logs en canales separados. Por ejemplo, uno puede usarse para el módulo cpu_stats (LOG_LOCAL1) y otro para toggle_active_cpu (LOG_LOCAL2).
+
+
+
+
+
+RECORDAR: LAS IMPRESIONES DE CPU_STATS ESTAN EN /var/log/local1.log, 
+como este archivo crece mucho, se realiza lo siguiente! 
+
+
+
+
+
+
+
+
+## Segunda iteración
 
 ### Pruebas con CORES
 
@@ -1696,4 +1906,53 @@ Ahora muestra que tienes 4 CPUs asignadas a la VM de FreeBSD. Esto significa que
     <img src="img/image87.png" alt="bloques">
   </figure>
 </p>
+
+Modificando el Modulo de `toggle_active_cpu.ko`, de la siguiente forma:
+
+```C
+static void 
+timer_callback_turn_off(void *arg) 
+{
+    if ((stats_score < LOAD_NORMAL) && (cpus_requested < 1)) {
+        if (check++ >= 3) { // al menos 90 segundos con baja carga
+            check = 0; // reinicia el contador
+
+            if (get_n_turned_off() < MAX_TURNED_OFF) {
+                int target_cpu = 1; // Fijar CPU objetivo
+                
+                if (target_cpu > 0 && !turned_off_cpus[target_cpu]) {
+                    turn_off_cpu(target_cpu);
+                    turned_off_cpus[target_cpu] = true;
+
+                    log(LOG_INFO | LOG_LOCAL2, "CPU %d turned off\n", target_cpu);
+                }
+            }
+        }
+    }
+
+    callout_schedule(&timer_turn_off, turn_off_interval_sec * hz);
+}
+```
+Para saturar: el scripts `cpu_load.sh`
+
+
+Se puede apagar completamente el nucleo 1 (esto con fines experimentales)
+
+<p align="center">
+  <figure>
+    <img src="img/image88.png" alt="bloques">
+  </figure>
+</p>
+
+volvemos a la configuracion anterior del modulo...
+
+### Pluggins Necesarios
+
+
+Los plugins de Clang y GCC son herramientas que extienden la funcionalidad de estos compiladores, permitiendo realizar tareas adicionales durante el proceso de compilación. Estas extensiones son útiles para desarrolladores que desean personalizar o mejorar su flujo de trabajo. Una vez obtenido este nuevo kernel, se probó que todo funcione correctamente
+utilizando los plugins CLang y GCC para insertar metadata en los ejecutables ELF y
+leer la misma en espacio de kernel.
+
+El uso de plugins de Clang y GCC para trabajar con metadata en ejecutables ELF es una técnica poderosa en FreeBSD. Permite una integración más estrecha entre el espacio de usuario y el kernel, con aplicaciones significativas en seguridad, optimización y control del sistema. 
+
 
